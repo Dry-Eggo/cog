@@ -1,0 +1,376 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+   
+#define TL_INIT_CAP 1024
+#define SC_INIT_CAP 1024
+   
+enum ValueKind {
+    ValueInt = 0, 
+    ValueString,
+    ValueChar, 
+    ValueFloat,
+};
+
+
+enum TokenKind {
+    T_LPAREN, T_RPAREN, T_KEYWORD, T_NUMBER, T_IDENT, T_STRING, T_EOL
+}; 
+  
+char* TK_tostr(enum TokenKind k) {
+    switch(k) {
+    case T_LPAREN:
+        return "LParen";
+    case T_RPAREN:
+        return "RParen";
+    case T_IDENT:
+        return "Identifier";
+    case T_KEYWORD:
+        return "Keyword";
+    case T_NUMBER:
+        return "Integer";
+    default:
+        return "<unimplemented>";
+    } 
+}  
+
+struct Token {
+    enum TokenKind kind;
+    char* lexme;
+};
+
+struct Value {
+    enum ValueKind kind;
+    union {
+        const char* string_data;
+        int int_data;
+        float float_data;
+        char char_data;
+    };  
+};  
+   
+struct Value Value_from_tk(struct Token t) {
+    if (t.kind == T_NUMBER) {
+        return (struct Value) {
+            ValueInt,
+            .int_data = strtol(t.lexme, NULL, 10),
+        };
+    } else if (t.kind == T_STRING) {
+        char buf[64] = {0};
+        int i = snprintf(buf, sizeof(buf), "'%s'", t.lexme);
+        buf[i] = '\0';
+        return (struct Value) {
+            ValueInt,
+            strdup(buf),
+        };
+    }
+    printf("Invalid Value '%s'\n", t.lexme);
+    exit(1);
+}
+const char* Value_tostr(struct Value v) {
+    return v.string_data;
+}
+
+struct Variable {
+    char* name;
+    struct Value value;
+};    
+
+struct Variable create_variable(char* name, struct Value value) {
+    return (struct Variable) {name, value};
+}
+
+struct Scope {
+    int count;
+    int cap;
+    struct Variable* variables;
+};       
+   
+void SC_init(struct Scope **sc) {
+    *sc = (struct Scope*) malloc(sizeof(struct Scope));  
+    (*sc)->count = 0;
+    (*sc)->cap = SC_INIT_CAP; 
+    (*sc)->variables = (struct Variable*)malloc(sizeof(struct Variable) * (*sc)->cap);
+}   
+    
+void SC_grow(struct Scope* sc) { 
+    sc->variables = realloc(sc->variables, sc->cap*2);
+    sc->cap *= 2;
+}   
+   
+void SC_add(struct Scope* sc, struct Variable t) {
+    if (sc->cap >= sc->cap) {
+        SC_grow(sc);
+    }  
+    sc->variables[sc->count++] = t;
+}  
+
+void SC_dump(struct Scope* sc) {
+   int c = 0;
+   int smax = sc->count;
+   while (c < smax) {
+       struct Variable v = sc->variables[c];
+       printf("{%s : %s}\n", v.name, Value_tostr(v.value));
+       ++c;
+   } 
+}
+
+int SC_find(struct Scope* sc, const char* name) {
+    int i = 0;
+    int max = sc->count;
+    while (i < max) {
+        struct Variable v = sc->variables[i];
+        if (strcmp(v.name, name) == 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+struct Variable SC_get(struct Scope* sc, char* name) {
+
+    int i = 0;
+    int max = sc->count;
+    while (i < max) {
+        struct Variable v = sc->variables[i];
+        if (strcmp(v.name, name) == 0) {
+            return v;
+        }
+    }
+    return (struct Variable){};
+}
+  
+   
+struct Token create_token(enum TokenKind kind, char* lexme) {
+    return (struct Token) {
+        kind, lexme,
+    };  
+}  
+ 
+struct TokenList {
+    int count;
+    int cap;
+    struct Token* tokens;
+};
+
+void TL_init(struct TokenList **tl) {
+    *tl = (struct TokenList*) malloc(sizeof(struct TokenList));
+    (*tl)->count = 0;
+    (*tl)->cap = TL_INIT_CAP;
+    (*tl)->tokens = (struct Token*)malloc(sizeof(struct Token) * (*tl)->cap);
+}
+
+void TL_grow(struct TokenList* tl) {
+    tl->tokens = realloc(tl->tokens, tl->cap*2);
+    tl->cap *= 2;
+}
+
+void TL_add(struct TokenList* tl, struct Token t) {
+    if (tl->cap >= tl->cap) {
+        TL_grow(tl);
+    }
+    tl->tokens[tl->count++] = t;
+}
+
+void TL_dump(struct TokenList* tl) {
+    printf("Tokens:\n");
+    for (int i = 0; i < tl->count; ++i) {
+        struct Token t = tl->tokens[i];
+        printf("    %s ('%s') \n", TK_tostr(t.kind), t.lexme);
+    }
+}
+
+int iskeyword(char* key) {
+    if (strcmp(key, "set") == 0) {
+        return 1;
+    }
+    if (strcmp(key, "dump") == 0) {
+        return 1;
+    }
+    if (strcmp(key, "re") == 0) {
+        return 1;
+    }
+    if (strcmp(key, "scope") == 0) {
+        return 1;
+    } if (strcmp(key, "add") == 0) {
+        return 1;
+    }
+    return 0;
+}
+
+struct TokenList* lex(char* line) {
+    int i = 0;
+    int max = strlen(line);
+    struct TokenList *tokens;
+    TL_init(&tokens);
+    while (i < max) {
+        if (isspace(line[i])) {
+            while (isspace(line[i])) {
+                i++;
+            }
+        }
+        if (isalpha(line[i]) || line[i] == '_') {
+            char buf[64] = {0};
+            int inx = 0;
+            while ((i < max) && isalnum(line[i]) || line[i] == '_') {
+                buf[inx++] = line[i++];
+            }
+            buf[inx] = '\0';
+            if (iskeyword(buf)) {
+                TL_add(tokens, create_token(T_KEYWORD, strdup(buf)));
+                continue;
+            }
+            TL_add(tokens, create_token(T_IDENT, strdup(buf)));
+            continue;
+        }
+        if (isdigit(line[i])) {
+            char buf[64] = {0};
+            int inx = 0;
+            while ((i < max) && isdigit(line[i])) {
+                buf[inx++] = line[i++];
+            }
+            buf[inx] = '\0';
+            TL_add(tokens, create_token(T_NUMBER, strdup(buf)));
+            continue;
+        }
+        if (line[i] == '\"') {
+            ++i;
+            char buf[64] = {0};
+            int inx = 0;
+            while (line[i] != '\"') {
+                buf[inx++] = line[i++];
+            }
+            if (line[i] != '\"') {
+                printf("Unterminated String Sequence\n");
+                return NULL;
+            }
+            ++i;
+            buf[inx] = '\0';
+            TL_add(tokens, create_token(T_STRING, strdup(buf)));
+            continue;
+        }
+        switch(line[i]) {
+            case '(':
+                i++;
+                TL_add(tokens, create_token(T_LPAREN, "("));
+                break;
+            case ')':
+                i++;
+                TL_add(tokens, create_token(T_RPAREN, ")"));
+                break;
+            default:
+                printf("Error: Unexpected Character '%c'\n", line[i]);
+                exit(1);
+        }
+    }
+    return tokens;
+}
+
+enum ExprKind {
+    ExprInt = 0, 
+    ExprFuncCall,
+};
+
+struct Expr {
+    enum ExprKind kind;
+    struct Value value;
+};
+
+
+struct Expr eval_expr(struct Scope* sc, struct TokenList* t, int* i) {
+    struct Token* tokens = t->tokens;
+    struct Token tk = t->tokens[*i];
+    if (tk.kind == T_NUMBER) {
+        (*i)++;
+        return (struct Expr) { ExprInt, Value_from_tk(tk) };
+    } else if (tk.kind = T_IDENT) {
+        (*i)++;
+        if (!SC_find(sc, tk.lexme)) {
+            printf("Implicit Decalaration of '%s' is not allowed\n", tk.lexme);
+            exit(1);
+        }
+        struct Variable v = SC_get(sc, tk.lexme);
+        return (struct Expr) { .kind = v.value.kind, v.value };
+    } else  {
+        switch(tokens[*i].kind) {
+            case T_LPAREN:{
+                (i)++;
+                if (tokens[*i].kind == T_KEYWORD) {
+                    struct Token keyword = tokens[*i];
+                    if (strcmp(keyword.lexme, "set") == 0) {
+                        (*i)++;
+                        struct Token identifier = tokens[(*i)++];
+                        struct Token value = tokens[(*i)++];
+                        struct Value val = Value_from_tk(value);
+                        int c = 0;
+                        int cmax = sc->count;
+                        while (c < cmax) {
+                            struct Variable v = sc->variables[c];
+                            if (strcmp(v.name, identifier.lexme) == 0) {
+                                printf("Variable Already Exsists. Use (re %s %s) to re assign to it\n", identifier.lexme, Value_tostr(val));
+                            }
+                            ++c;
+                        }
+                        SC_add(sc, create_variable(identifier.lexme, val));
+                        return (struct Expr) { val.kind, val };
+                    } else if (strcmp(keyword.lexme, "scope") == 0) {
+                        ++(*i);
+                        SC_dump(sc);
+                        return (struct Expr) { ExprInt, (struct Value) { .int_data = sc->count } };
+                    } else if (strcmp(keyword.lexme, "add") == 0) {
+                        ++(*i);
+                        struct Expr v1 = eval_expr(sc, t, &(*i));
+                        struct Expr v2 = eval_expr(sc, t, &(*i));
+                        if (v1.kind == ExprInt && v2.kind == ExprInt) {
+                            int res = v1.value.int_data + v2.value.int_data;
+                            printf("=> %d\n", res);
+                            return (struct Expr) { ExprInt, (struct Value) { .int_data = res } };
+                        }
+                    }
+                    else {
+                        printf("Expected Valid Id: got '%s:%s'", TK_tostr(tokens[(*i)].kind), tokens[(*i)].lexme);
+                        exit(1);
+                    }
+                }
+                if (tokens[(*i)].kind != T_RPAREN) {
+                    printf("Expected Closing Delimeter\n");
+                    exit(1);
+                }
+                (*i)++;
+            }break;
+             default:
+                printf("Unexpected Token: '%s:%s'\n", TK_tostr(tokens[(*i)].kind), tokens[(*i)].lexme);
+                exit(1);
+        }
+    }
+    printf("Complex Expressions Not Supported yet\n");
+    exit(1);
+}
+
+struct Expr eval_line(struct Scope* sc, char* line) {
+    struct TokenList *t = lex(line);
+    struct Token* tokens = t->tokens;
+    int i = 0;
+    int max = t->count;
+    while (i < max) {
+        eval_expr(tokens, &i);
+        ++i;
+    }
+}
+
+int main(int c, char* v[]) {
+    struct Scope *sc;
+    SC_init(&sc);
+    while (1) {
+        printf("cog> ");
+        char buffer[1024] = {0};
+        fgets(buffer, sizeof(buffer), stdin);
+        buffer[strcspn(buffer, "\n")] = 0;
+        if (strcmp(buffer, "#exit") == 0) {
+            break;
+        }
+
+        eval_line(sc, buffer);
+    }
+}
