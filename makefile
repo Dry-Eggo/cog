@@ -1,6 +1,8 @@
 BINDIR:= bin
 SRCDIR:= compiler
 INCDIR:= includes
+LIBNAME:= libjuve.a
+LIBJUVE:= $(BINDIR)/$(LIBNAME)
 SRC:= $(wildcard $(SRCDIR)/*.c)
 CPPSRC:= $(wildcard juve/*.cpp)
 CPPOBJ:= $(patsubst juve/%.cpp, $(BINDIR)/%.o, $(CPPSRC))
@@ -11,11 +13,17 @@ TARGET:= $(BINDIR)/kudoc
 
 all: $(TARGET)
 
-$(TARGET): $(OBJ) $(CPPOBJ)
+$(TARGET): $(OBJ) $(LIBJUVE)
 	clang++ -o $@ $^ $(FLAGS)
+
+$(LIBJUVE): $(CPPOBJ)
+	ar -rcs $@ $^
 
 $(BINDIR)/%.o: $(SRCDIR)/%.c
 	clang -c -o $@ $< $(FLAGS)
 
 $(BINDIR)/%.o: juve/%.cpp
 	clang++ -c -o $@ $< $(FLAGS)
+
+clean:
+	rm $(shell find -type f -name "*~") $(LIBJUVE) $(OBJ) $(CPPOBJ)
