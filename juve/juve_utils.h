@@ -8,19 +8,12 @@ extern "C" {
 #include <stdbool.h>
 
 typedef struct juve_buffer juve_buffer_t;
-
-juve_buffer_t* jb_create();
-void jb_append(juve_buffer_t*, const char*);
-void jb_print(juve_buffer_t*);
-char* jb_str(juve_buffer_t*);
-void jb_free(juve_buffer_t*);
-void jb_clear(juve_buffer_t*);
+typedef struct juve_arena juve_arena_t;
 
 // Memory utils
 void* jmalloc(size_t);
 void  jfree(void*);
 
-typedef struct juve_arena juve_arena_t;
 juve_arena_t* jarena_new();
 void* jarena_alloc(juve_arena_t*, size_t);
 void* jarena_zeroed(juve_arena_t*, size_t);
@@ -28,17 +21,36 @@ void jarena_free(juve_arena_t*);
 void jarena_reset(juve_arena_t*);
 char* jarena_strdup(juve_arena_t*, char*);
 
+// buffer
+juve_buffer_t* jb_create();
+void jb_append(juve_buffer_t*, const char*);
+void jb_appendf_a(juve_buffer_t*, juve_arena_t*, const char* fmt, ...);
+void jb_print(juve_buffer_t*);
+char* jb_str(juve_buffer_t*);
+char* jb_str_a(juve_buffer_t* jb, juve_arena_t* arena);
+void jb_free(juve_buffer_t*);
+void jb_clear(juve_buffer_t*);
+bool jb_eq(juve_buffer_t*, const char*);
+
 // file utils
 size_t jb_read_entire_file(const char*, juve_buffer_t*);
+bool jfile_write(const char*, const char*);
+char*  jfile_stem(const char*, juve_arena_t*);
+char*  jfile_ext(const char*, juve_arena_t*);
+char* jfile_dirname(const char*, juve_arena_t*);
+char* jfile_basename(const char*, juve_arena_t*);
+bool jfile_exists(const char*);
+long jfile_size(const char*);
+
 
 // containers
 typedef struct juve_map juve_map_t;
 typedef struct juve_vec juve_vec_t;
-
 juve_vec_t* jvec_new();
 void jvec_push(juve_vec_t*, void*);
 size_t jvec_len(juve_vec_t*);
 void*  jvec_at(juve_vec_t*, size_t);
+void* jvec_back(juve_vec_t*);
 void  jvec_free(juve_vec_t*);
 
 juve_map_t* jmap_new();

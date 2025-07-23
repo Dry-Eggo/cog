@@ -1,6 +1,6 @@
 BINDIR:= bin
 SRCDIR:= compiler
-INCDIR:= includes
+INCDIR:= $(SRCDIR)/includes
 LIBNAME:= libjuve.a
 LIBJUVE:= $(BINDIR)/$(LIBNAME)
 SRC:= $(wildcard $(SRCDIR)/*.c)

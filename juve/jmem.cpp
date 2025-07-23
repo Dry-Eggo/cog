@@ -45,7 +45,6 @@ char* jarena_strdup(juve_arena_t* arena, char* str) {
     size_t str_len = strlen(str) + 1;
     char* new_str = (char*)jarena_alloc(arena, str_len);
     memcpy(new_str, str, str_len);
-    new_str[str_len] = '\0';
     return new_str;
 }
 

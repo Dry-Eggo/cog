@@ -33,6 +33,11 @@ void*  jvec_at(juve_vec_t* vec, size_t n) {
     return vec->data.at(n);
 }
 
+void* jvec_back(juve_vec_t* vec) {
+    if (!vec) return nullptr;
+    return vec->data.back();
+}
+
 void  jvec_free(juve_vec_t* vec) {
     if(!vec) return;
     delete vec;
