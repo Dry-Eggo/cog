@@ -3,15 +3,17 @@
 #include <stdlib.h>
 #include <lexer.h>
 #include <compiler_opt.h>
+#include <driver.h>
 
 juve_arena_t* global_arena;
 
 extern void print_usage(const char* program_name) {
     fprintf(stdout, "usage: %s [option...] [arg...]\n", program_name);
     fprintf(stdout, "option:\n");
-    fprintf(stdout, "    %5s <path>    Input path\n", "-i, --source");
-    fprintf(stdout, "    %5s <path>    Output path\n", "-o, --output");
-    fprintf(stdout, "    %5s          Verbose logging\n", "-b, --verbose");
+    fprintf(stdout, "    -i, --source <path>    Input path\n");
+    fprintf(stdout, "    -o, --output <path>    Output path\n");
+    fprintf(stdout, "    -b, --verbose          Verbose logging\n");
+    fprintf(stdout, "    -t, --test             Test mode. exits with success even on error\n");
 }
 
 int main(int argc, char** argv) {
@@ -25,6 +27,14 @@ int main(int argc, char** argv) {
     
     if (jcli_has_flag_sl(args, "b", "verbose")) {
 	compile_options.verbose_logging = true;
+    } else {
+	compile_options.verbose_logging = false;
+    }
+    
+    if (jcli_has_flag_sl(args, "t", "test")) {
+	compile_options.test_mode = true;
+    } else {
+	compile_options.test_mode = false;
     }
     
     if (!jcli_get_option_sl(args, "o", "output", &compile_options.output_file)) {
@@ -37,18 +47,7 @@ int main(int argc, char** argv) {
 	printf("Kudo: No input was provided\n");
     }
 
-    lexer_t* lexer = lexer_new(&compile_options);
-    lexer_lex(lexer);
-
-    if (compile_options.verbose_logging) {
-	printf("========================\n");
-	int max = jvec_len(lexer->tokens);
-	for (int i = 0; i < max; ++i) {
-	    token_t tok = *(token_t*)jvec_at(lexer->tokens, i);
-	    printf("|| Token(%d : '%s')\n", (int)tok.kind, tok.text, ' ');
-	}
-	printf("========================\n");
-    }
+    kudo_compile(&compile_options, args);
     
     jarena_free(global_arena);
     return 0;

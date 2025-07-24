@@ -9,6 +9,9 @@ CPPOBJ:= $(patsubst juve/%.cpp, $(BINDIR)/%.o, $(CPPSRC))
 OBJ:= $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.o, $(SRC))
 FLAGS:= -I$(INCDIR) -I./juve
 
+TESTFILES := $(wildcard tests/*.kd)
+TESTOUTPUTS := $(patsubst tests/%.kd, tests/out/%.test, $(TESTFILES))
+
 TARGET:= $(BINDIR)/kudoc
 
 all: $(TARGET)
@@ -27,3 +30,12 @@ $(BINDIR)/%.o: juve/%.cpp
 
 clean:
 	rm $(shell find -type f -name "*~") $(LIBJUVE) $(OBJ) $(CPPOBJ)
+
+tests/out/%.test: tests/%.kd
+	@mkdir -p tests/out
+	$(TARGET) --test -i $< > $@ 2>&1
+
+test: $(TESTOUTPUTS)
+	@echo "Tested: " $(TESTOUTPUTS)
+
+.PHONY: clean test

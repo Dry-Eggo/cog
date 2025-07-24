@@ -36,19 +36,19 @@ typedef struct item_funcdef {
     const char* linkage_name;
     
     juve_vec_t*   params; // vector of param_t*
-    stmt_t*     body;
+    expr_t*     body;
 } funcdef_t;
 
-typedef struct expr_body {
+typedef struct expr_block {
     juve_vec_t* statements;
-} body_t;
+} block_t;
 
 struct expr_ {
     expr_kind_t kind;
     span_t span;
     union {
 	struct expr_literal literal;
-	struct expr_body    body;
+	struct expr_block   block;
     } data;
 };
 
@@ -68,3 +68,5 @@ typedef struct {
 	struct item_funcdef fndef;
     } data;
 } item_t;
+
+expr_t* expr_make_block(juve_vec_t* stmts);

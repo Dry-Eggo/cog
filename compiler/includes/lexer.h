@@ -16,6 +16,6 @@ typedef struct {
     juve_vec_t* tokens;
 } lexer_t;
 
-lexer_t* lexer_new(compile_options_t* opts);
+lexer_t* lexer_new(compile_options_t*, const char* source);
 bool lexer_lex(lexer_t* lexer);
 void lexer_free(lexer_t*);

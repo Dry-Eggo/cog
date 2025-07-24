@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <sstream>
 
 struct juve_vec {
     std::vector<void*> data;
@@ -15,6 +16,17 @@ struct juve_map {
 
 juve_vec_t* jvec_new() {
     return new juve_vec();
+}
+
+juve_vec_t* jvec_lines(const char* source, juve_arena_t* arena) {
+    juve_vec_t* vec = jvec_new();
+    std::stringstream ss;
+    ss << source;
+    std::string line;
+    while (std::getline(ss, line)) {
+	jvec_push(vec, (void*)jarena_strdup(arena, (char*)line.c_str()));
+    }
+    return vec;
 }
 
 void jvec_push(juve_vec_t* vec, void* ptr) {

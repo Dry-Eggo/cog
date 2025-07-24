@@ -5,18 +5,11 @@
 #include <string.h>
 #include <ctype.h>
 
-lexer_t* lexer_new(compile_options_t* opts) {
+lexer_t* lexer_new(compile_options_t* opts, const char* source) {
     lexer_t* lexer = jarena_alloc(global_arena, sizeof(lexer_t));
 
-    if (!jfile_exists(opts->input_file)) {
-	log_err("Unable to open file: '%s': file not found\n", opts->input_file);
-    }
-    
-    juve_buffer_t* buffer = jb_create();
-    jb_read_entire_file(opts->input_file, buffer);
-
     lexer->source_path = opts->input_file;
-    lexer->source = jb_str_a(buffer, global_arena);
+    lexer->source = source;
     lexer->source_size = strlen(lexer->source);
     
     lexer->line = 1;
@@ -25,7 +18,6 @@ lexer_t* lexer_new(compile_options_t* opts) {
 
     lexer->tokens = jvec_new();
 
-    jb_free(buffer);
     return lexer;
 }
 

@@ -47,11 +47,13 @@ long jfile_size(const char*);
 typedef struct juve_map juve_map_t;
 typedef struct juve_vec juve_vec_t;
 juve_vec_t* jvec_new();
+juve_vec_t* jvec_lines(const char* source, juve_arena_t*);
 void jvec_push(juve_vec_t*, void*);
 size_t jvec_len(juve_vec_t*);
 void*  jvec_at(juve_vec_t*, size_t);
 void* jvec_back(juve_vec_t*);
 void  jvec_free(juve_vec_t*);
+
 
 juve_map_t* jmap_new();
 void jmap_put(juve_map_t*, const char*, void*);
