@@ -66,7 +66,7 @@ void jmap_free(juve_map_t*);
 typedef struct jcli_args jcli_args_t;
 void jcli_parse(int, char**, jcli_args_t*, juve_arena_t*);
 jcli_args_t* jcli_new_a(juve_arena_t*);
-
+void jcli_args_free(jcli_args_t*);
 // checks if the args contains any flag named 'name'
 // do not pass 'name' containing '--' or '-' again to this function
 bool jcli_has_flag(jcli_args_t*, const char* name);

@@ -21,6 +21,12 @@ jcli_args_t* jcli_new_a(juve_arena_t* arena) {
     return args;
 }
 
+void jcli_args_free(jcli_args_t* args) {
+    jvec_free(args->positionals);
+    jvec_free(args->flags);
+    jmap_free(args->options);
+}
+
 void jcli_parse(int c, char** v, jcli_args_t* cli, juve_arena_t* arena) {
     if (!cli) return;
     int i = 0;
