@@ -2,7 +2,7 @@
 
 #include <compiler.h>
 #include <compiler_opt.h>
-
+#include <color.h>
 #include <lexer.h>
 #include <parser.h>
 

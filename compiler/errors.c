@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <defines.h>
 
 syntax_error_t* make_syntax_error(span_t span, const char* msg, const char* hint) {
     syntax_error_t* err = (syntax_error_t*)jarena_alloc(global_arena, sizeof(syntax_error_t));
@@ -35,7 +36,8 @@ void underline_span(span_t span, const char* line) {
 
 void report_err(syntax_error_t* err, const char* line) {
     span_t span = err->span;
-    fprintf(stderr, "Kudo: Syntax Error: (%ld:%ld): %s\n", span.line, span.column, err->message);
+    fprintf(stderr, "%sKudo%s: %s%sSyntax Error%s: (%ld:%ld): %s\n", c(color_bold_k), c(color_reset_k), c(color_bold_k),
+    c(color_red_k), c(color_reset_k), span.line, span.column, err->message);
     fprintf(stderr, "    ----> %s\n", span.filename);
     fprintf(stderr, "   |\n");
     fprintf(stderr, " %ld |%s\n", span.line, line);

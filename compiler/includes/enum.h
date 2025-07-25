@@ -68,3 +68,11 @@ typedef enum {
     stmt_assign_k,
 } stmt_kind_t;
 
+typedef enum {
+    color_reset_k,
+    color_bold_k,
+    color_red_k,
+    color_yello_k,
+    color_blue_k,
+    color_count_k
+} color_t;

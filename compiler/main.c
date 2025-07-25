@@ -1,11 +1,9 @@
 #include <stdio.h>
-#include <juve_utils.h>
-#include <stdlib.h>
-#include <lexer.h>
-#include <compiler_opt.h>
 #include <driver.h>
 
+
 juve_arena_t* global_arena;
+color_manager_t global_color_manager;
 
 extern void print_usage(const char* program_name) {
     fprintf(stdout, "usage: %s [option...] [arg...]\n", program_name);
@@ -18,6 +16,7 @@ extern void print_usage(const char* program_name) {
 
 int main(int argc, char** argv) {
     global_arena = jarena_new();
+    cm_init(&global_color_manager);
     jcli_args_t* args = jcli_new_a(global_arena);
     jcli_parse(argc, argv, args, global_arena);
 
