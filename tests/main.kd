@@ -1,4 +1,4 @@
 
-func main() name {
-     
+func main() {
+     let age := 40;
 }

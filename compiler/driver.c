@@ -3,6 +3,7 @@
 #include <defines.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <semantics.h>
 
 void abort_compilation(driver_t* driver) {
     int exit_code = driver->options->test_mode ? 0 : 1;
@@ -28,7 +29,9 @@ driver_t* driver_new(const char* source, compile_options_t* opts) {
 
 void kudo_compile(compile_options_t* compile_options, jcli_args_t* args) {
     if (!jfile_exists(compile_options->input_file)) {
-	log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
+	    log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
+	    jcli_args_free(args);
+	    exit(1);
     }
     
     juve_buffer_t* buffer = jb_create();
@@ -42,23 +45,30 @@ void kudo_compile(compile_options_t* compile_options, jcli_args_t* args) {
     lexer_lex(driver->lexer);
 
     if (compile_options->verbose_logging) {
-	printf("========================\n");
-	int max = jvec_len(driver->lexer->tokens);
-	for (int i = 0; i < max; ++i) {
-	    token_t tok = *(token_t*)jvec_at(driver->lexer->tokens, i);
-	    printf("|| Token(%d : '%s')\n", (int)tok.kind, tok.text);
-	}
-	printf("========================\n");
+	    printf("========================\n");
+	    int max = jvec_len(driver->lexer->tokens);
+	    for (int i = 0; i < max; ++i) {
+	        token_t tok = *(token_t*)jvec_at(driver->lexer->tokens, i);
+	        printf("|| Token(%d : '%s')\n", (int)tok.kind, tok.text);
+	    }
+	    printf("========================\n");
     }
     
     driver->parser = parser_new(compile_options, driver->lexer->tokens, driver->lexer->source);
     if (!parser_parse(driver->parser)) {
-	syntax_error_flush(driver->parser->errors, driver->source_lines);
-	fprintf(stderr, "Kudo: %ld parsing errors occured\n", jvec_len(driver->parser->errors));
-	jb_free(buffer);
-	jcli_args_free(args);
-	abort_compilation(driver);
+	    syntax_error_flush(driver->parser->errors, driver->source_lines);
+	    fprintf(stderr, "Kudo: %ld parsing errors occured\n", jvec_len(driver->parser->errors));
+	    jb_free(buffer);
+	    jcli_args_free(args);
+	    abort_compilation(driver);
     }
+
+    printf("Total top level items: %ld\n", jvec_len(driver->parser->items));
+
+    driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
+    sema_check(driver->sema);
+
+    jb_print(driver->sema->tmp_out);
     
     jb_free(buffer);
 }

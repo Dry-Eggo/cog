@@ -6,6 +6,10 @@ typedef enum {
     token_return_k,
     token_let_k,
     token_var_k,
+    token_int_k,
+    token_cstr_k,
+    token_str_k,
+    token_none_k,
     
     // values
     token_number_k,

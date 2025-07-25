@@ -31,7 +31,6 @@ void underline_span(span_t span, const char* line) {
 	    fprintf(stderr," ");
 	}
     }
-    fprintf(stderr,"\n");
 }
 
 void report_err(syntax_error_t* err, const char* line) {
@@ -43,6 +42,10 @@ void report_err(syntax_error_t* err, const char* line) {
     fprintf(stderr, " %ld |%s\n", span.line, line);
     fprintf(stderr, "   |");
     underline_span(span, line);
+    if (err->hint) {
+        fprintf(stderr, ": %s%s%s", c(color_blue_k), err->hint, c(color_reset_k));
+    }
+    fprintf(stderr,"\n");
 }
 
 void syntax_error_flush(juve_vec_t* errors, juve_vec_t* source) {

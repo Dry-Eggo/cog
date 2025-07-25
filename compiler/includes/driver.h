@@ -5,6 +5,7 @@
 #include <color.h>
 #include <lexer.h>
 #include <parser.h>
+#include <semantics.h>
 
 typedef enum {
     phase_lexer_k,
@@ -22,6 +23,7 @@ typedef struct {
     
     lexer_t*           lexer;
     parser_t*          parser;
+    semantics_t*       sema;
 } driver_t;
 
 

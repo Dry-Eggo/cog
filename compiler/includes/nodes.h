@@ -2,6 +2,7 @@
 
 #include <enum.h>
 #include <token.h>
+#include <types.h>
 
 typedef struct expr_ expr_t;
 typedef struct stmt_ stmt_t;
@@ -10,11 +11,11 @@ typedef struct expr_literal {
     span_t span;
     literal_kind_t kind;
     union {
-	const char* str_value; /* used for both identifers and any value that requires string storage */
-	long int_value;
-	bool bool_value;
-	char char_value;
-	float float_value;
+	    const char* str_value; /* used for both identifers and any value that requires string storage */
+	    long int_value;
+	    bool bool_value;
+	    char char_value;
+	    float float_value;
     } lit;
 } literal_t;
 
@@ -23,7 +24,12 @@ typedef struct stmt_vardecl {
     bool is_uninit;
     bool is_const;
 
-    expr_t* identifier; // could be a pattern or literal
+    union {
+        const char* identifer;
+        expr_t*     pattern;
+    };
+
+    type_t* type;
     expr_t* rhs;
 } vardecl_t;
 
@@ -37,6 +43,7 @@ typedef struct item_funcdef {
     
     juve_vec_t*   params; // vector of param_t*
     expr_t*     body;
+    type_t*     return_type;
 } funcdef_t;
 
 typedef struct expr_block {
@@ -47,8 +54,8 @@ struct expr_ {
     expr_kind_t kind;
     span_t span;
     union {
-	struct expr_literal literal;
-	struct expr_block   block;
+	    struct expr_literal literal;
+	    struct expr_block   block;
     } data;
 };
 
@@ -56,8 +63,8 @@ struct stmt_ {
     stmt_kind_t kind;
     span_t span;
     union {
-	struct stmt_vardecl vardecl;
-	struct expr_ expr;
+	    struct stmt_vardecl vardecl;
+	    struct expr_ expr;
     } data;
 };
 
@@ -65,8 +72,9 @@ typedef struct {
     item_kind_t kind;
     span_t span;
     union {
-	struct item_funcdef fndef;
+	    struct item_funcdef fndef;
     } data;
 } item_t;
 
 expr_t* expr_make_block(juve_vec_t* stmts);
+expr_t* expr_make_literal_int(long value, span_t span);
