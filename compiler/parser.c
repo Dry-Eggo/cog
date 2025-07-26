@@ -6,7 +6,7 @@
 #include <types.h>
 #include <defines.h>
 
-#define err_semi(p) add_error(p, make_syntax_error(*parser_before(p)->span, "Unqualified token", "did you forget a ';'"))
+#define err_semi(p) add_error(p, make_syntax_error(*parser_now(p)->span, "Unqualified token", "did you forget a ';'"))
 #define get_span(p) (*parser_now(p)->span)
 #define get_pspan(p) (parser_now(p)->span)
 
