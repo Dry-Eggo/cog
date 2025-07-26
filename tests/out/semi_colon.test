@@ -1,0 +1,7 @@
+Kudo: Syntax Error: (2:17): Unqualified token
+    ----> tests/semi_colon.kd
+   |
+ 2 |     let age := 20
+   |                ^~: did you forget a ';'
+Kudo: 1 parsing errors occured
+Kudo: compilation aborted

@@ -188,7 +188,7 @@ stmt_t* parse_stmt(parser_t* parser) {
         
         span_t* end = get_pspan(parser);
         if (!expect(parser, token_semi_k)) {
-            err_semi(parser);            
+            err_semi(parser);
         }
         return stmt_make_vardecl(vardecl, span_merge(start, end));
     }

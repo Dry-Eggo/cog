@@ -1,0 +1,4 @@
+func main() {
+     let age := 20
+     let age2 := 40;
+}

@@ -30,7 +30,7 @@ driver_t* driver_new(const char* source, compile_options_t* opts) {
 
 void driver_free(driver_t* driver) {    
     jvec_free(driver->source_lines);
-    sema_free(driver->sema);
+    if (driver->phase >= phase_sema_k) sema_free(driver->sema);
 }
 
 void kudo_compile(compile_options_t* compile_options) {
@@ -58,7 +58,8 @@ void kudo_compile(compile_options_t* compile_options) {
 	    }
 	    printf("========================\n");
     }
-    
+
+    driver->phase = phase_parser_k;
     driver->parser = parser_new(compile_options, driver->lexer->tokens, driver->lexer->source);
     if (!parser_parse(driver->parser)) {
 	    syntax_error_flush(driver->parser->errors, driver->source_lines);
@@ -66,7 +67,8 @@ void kudo_compile(compile_options_t* compile_options) {
 	    jb_free(buffer);
 	    abort_compilation(driver);
     }
-    
+
+    driver->phase = phase_sema_k;
     driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
     if (!sema_check(driver->sema)) {
         sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
