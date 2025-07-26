@@ -156,6 +156,13 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
                     todo("error_implementation");                    
                 }
             }
+        } else {
+            final_ty = get_type_info(sema, type_get_name(vardecl.type));
+            if (!final_ty) {
+                // ERROR_IMPLEMENTAION
+                log_err("invalid type: '%s'\n", type_get_name(vardecl.type));
+                todo("error_implementation");                    
+            }
         }
         
         jb_appendf_a(code, global_arena, "\n\t%s %s = %s;", type_get_repr(final_ty), vardecl.identifer, expr.result);

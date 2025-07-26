@@ -1,0 +1,5 @@
+Total top level items: 1
+int main ()
+{
+	const char* age = 40;
+}

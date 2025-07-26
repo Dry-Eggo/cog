@@ -165,7 +165,7 @@ stmt_t* parse_stmt(parser_t* parser) {
         }
 
         if (match(parser, token_coleq_k)) {
-            vardecl.type = type_new(type_any_k, NULL, NULL);
+            vardecl.type = type_new(type_cstring_k, "cstr", NULL);
             parser_advance(parser);
         } else {
             todo("parser_t::parse_stmt::parse_vardecl: parse vardecl type");
