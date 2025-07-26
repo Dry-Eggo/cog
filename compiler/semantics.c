@@ -140,16 +140,25 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
     if (stmt->kind == stmt_vardecl_k) {
         vardecl_t vardecl = stmt->data.vardecl;
         expr_result_t expr = check_expr(sema, vardecl.rhs);
-
+        type_t* final_ty = vardecl.type;
+        
         if (type_get_kind(vardecl.type) == type_any_k) {
             if (!expr.type) {
                 // ERROR_IMPLEMENTAION
                 log_err("invalid inference\n");
                 todo("error_implementation");
             }
+            else {
+                final_ty = get_type_info(sema, type_get_name(expr.type));
+                if (!final_ty) {
+                    // ERROR_IMPLEMENTAION
+                    log_err("invalid type: '%s'\n", type_get_name(vardecl.type));
+                    todo("error_implementation");                    
+                }
+            }
         }
         
-        jb_appendf_a(code, global_arena, "\n\tint %s = %s;", vardecl.identifer, expr.result);
+        jb_appendf_a(code, global_arena, "\n\t%s %s = %s;", type_get_repr(final_ty), vardecl.identifer, expr.result);
     }
     return sresult_new(jb_str_a(code, global_arena));
 }
