@@ -29,6 +29,7 @@ typedef enum {
     token_fat_arrow_k,  // =>
     token_comma_k,      // ,
     token_coleq_k,      // :=
+    token_eq_k,
     
     token_eof_k,
 } token_kind_t;

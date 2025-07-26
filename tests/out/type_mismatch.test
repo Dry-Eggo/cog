@@ -1,0 +1,6 @@
+Kudo: Type Error: (4:22): cannot implicitly convert from 'int' to 'cstr'
+       |
+     3 |func main() {
+     4 |     let age: cstr = 40;
+       |                     ^~ 
+Kudo: compilation aborted

@@ -1,4 +1,6 @@
 
+
 func main() {
      let age := 40;
+     let age2 := age3;
 }

@@ -5,14 +5,15 @@
 #include <stdlib.h>
 #include <semantics.h>
 
+void driver_free(driver_t* driver);
+
 void abort_compilation(driver_t* driver) {
-    int exit_code = driver->options->test_mode ? 0 : 1;
-    jvec_free(driver->lexer->tokens);
+    int exit_code = 1;
+    if (driver) {
+        exit_code = driver->options->test_mode ? 0 : 1;
+        driver_free(driver);
+    }
     
-    jvec_free(driver->parser->errors);
-    jvec_free(driver->parser->items);
-    
-    jvec_free(driver->source_lines);
     jarena_free(global_arena);
     fprintf(stderr, "Kudo: compilation aborted\n");
     exit(exit_code);
@@ -27,10 +28,15 @@ driver_t* driver_new(const char* source, compile_options_t* opts) {
     return driver;
 }
 
+void driver_free(driver_t* driver) {    
+    jvec_free(driver->source_lines);
+    sema_free(driver->sema);
+}
+
 void kudo_compile(compile_options_t* compile_options) {
     if (!jfile_exists(compile_options->input_file)) {
 	    log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
-	    exit(1);
+        abort_compilation(NULL);
     }
     
     juve_buffer_t* buffer = jb_create();
@@ -45,9 +51,9 @@ void kudo_compile(compile_options_t* compile_options) {
 
     if (compile_options->verbose_logging) {
 	    printf("========================\n");
-	    int max = jvec_len(driver->lexer->tokens);
+	    int max = cjvec_len(driver->lexer->tokens);
 	    for (int i = 0; i < max; ++i) {
-	        token_t tok = *(token_t*)jvec_at(driver->lexer->tokens, i);
+	        token_t tok = *(token_t*)cjvec_at(driver->lexer->tokens, i);
 	        printf("|| Token(%d : '%s')\n", (int)tok.kind, tok.text);
 	    }
 	    printf("========================\n");
@@ -56,17 +62,18 @@ void kudo_compile(compile_options_t* compile_options) {
     driver->parser = parser_new(compile_options, driver->lexer->tokens, driver->lexer->source);
     if (!parser_parse(driver->parser)) {
 	    syntax_error_flush(driver->parser->errors, driver->source_lines);
-	    fprintf(stderr, "Kudo: %ld parsing errors occured\n", jvec_len(driver->parser->errors));
+	    fprintf(stderr, "Kudo: %ld parsing errors occured\n", cjvec_len(driver->parser->errors));
 	    jb_free(buffer);
 	    abort_compilation(driver);
     }
-
-    printf("Total top level items: %ld\n", jvec_len(driver->parser->items));
-
-    driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
-    sema_check(driver->sema);
-
-    jb_print(sema_get_tmp(driver->sema));
     
+    driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
+    if (!sema_check(driver->sema)) {
+        sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
+        abort_compilation(driver);
+    }
+
+    jb_print(sema_get_tmp(driver->sema));    
     jb_free(buffer);
+    driver_free(driver);
 }

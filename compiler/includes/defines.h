@@ -13,6 +13,11 @@ exit(1);\
 } while (0)
 
 #define unreachable do {\
-fprintf(stderr, "Unreachable %s:%d\n", __FILE__, __LINE__)\
-exit(1)\
+fprintf(stderr, "Unreachable %s:%d\n", __FILE__, __LINE__);\
+exit(1);\
 } while (0)
+
+
+#define fori(ty, val, i, l) \
+for (int i = 0; i < cjvec_len(l); ++i)\
+for (ty val = cjvec_at(l, i); i < cjvec_len(l); ++i, val = cjvec_at(l, i))

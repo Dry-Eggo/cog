@@ -13,7 +13,7 @@ typedef struct {
     const char* source;
     const char* source_path;
     
-    juve_vec_t* tokens;
+    cjvec_t* tokens;
 } lexer_t;
 
 lexer_t* lexer_new(compile_options_t*, const char* source);

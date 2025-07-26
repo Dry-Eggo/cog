@@ -20,7 +20,8 @@ typedef struct expr_literal {
 } literal_t;
 
 typedef struct stmt_vardecl {
-    var_decl_kind_t kind;
+    span_t span;
+    var_decl_kind_t kind;    
     bool is_uninit;
     bool is_const;
 
@@ -47,7 +48,7 @@ typedef struct item_funcdef {
 } funcdef_t;
 
 typedef struct expr_block {
-    juve_vec_t* statements;
+    cjvec_t* statements;
 } block_t;
 
 struct expr_ {
@@ -76,5 +77,9 @@ typedef struct {
     } data;
 } item_t;
 
-expr_t* expr_make_block(juve_vec_t* stmts);
+expr_t* expr_make_block(cjvec_t* stmts);
 expr_t* expr_make_literal_int(long value, span_t span);
+expr_t* expr_make_identifier(const char* name, span_t span);
+stmt_t* stmt_make_vardecl(vardecl_t vardecl, span_t);
+
+item_t* item_make_fndef(funcdef_t fn, span_t span);

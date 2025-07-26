@@ -1,0 +1,5 @@
+
+
+func main() {
+     let age: cstr = 40;
+}

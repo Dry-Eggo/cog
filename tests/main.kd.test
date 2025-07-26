@@ -1,7 +1,0 @@
-Kudo: Syntax Error: (2:13): Not a valid expression
-    ----> ./tests/main.kd
-   |
- 2 |func main() name {
-   |            ^~~~  
-Kudo: compilation aborted
-Kudo: 1 parsing errors occured

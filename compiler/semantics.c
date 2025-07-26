@@ -1,4 +1,6 @@
 #include <semantics.h>
+#include <errors.h>
+#include <variables.h>
 #include <defines.h>
 #include <stdlib.h>
 #include <nodes.h>
@@ -7,8 +9,8 @@
 #include <stdarg.h>
 
 struct semantics_s {
-    juve_vec_t* program;
-    juve_vec_t* diagnostics;
+    cjvec_t* program;
+    cjvec_t* diagnostics;
     juve_vec_t* source_lines;
 
     juve_map_t* functions;
@@ -48,14 +50,14 @@ expr_result_t eresult_new(const char* s, const char* p, type_t* ty) {
 }
 
 
-semantics_t* semantics_init(juve_vec_t* items, juve_vec_t* source_lines, const char* source, compile_options_t* opts) {
+semantics_t* semantics_init(cjvec_t* items, juve_vec_t* source_lines, const char* source, compile_options_t* opts) {
     semantics_t* sema = alloc(semantics_t);
     sema->program = items;
     sema->source_lines = source_lines;
     sema->source = source;
     sema->options = opts;
     
-    sema->diagnostics = jvec_new();
+    sema->diagnostics = cjvec_new(global_arena);
     sema->tmp_out = jb_create();
     
     sema->functions = jmap_new();
@@ -66,12 +68,23 @@ semantics_t* semantics_init(juve_vec_t* items, juve_vec_t* source_lines, const c
     // initialize builtin types
     // todo: move to a seperate function
     jmap_put(sema->types, "int", type_new(type_int_k, "int", "int"));
-    jmap_put(sema->types, "cstr", type_new(type_int_k, "cstr", "const char*"));
-    jmap_put(sema->types, "none", type_new(type_int_k, "none", "void"));
+    jmap_put(sema->types, "cstr", type_new(type_cstring_k, "cstr", "const char*"));
+    jmap_put(sema->types, "none", type_new(type_none_k, "none", "void"));
     
     return sema;
 }
 
+void sema_free(semantics_t* sema) {
+    if (sema) {
+        jmap_free(sema->types);
+        jmap_free(sema->functions);
+        jmap_free(sema->symbols);
+        jb_free(sema->tmp_out);
+    }
+}
+
+void register_sym(semantics_t* sema, const char*, symbol_info_t* sym);
+symbol_info_t* get_syminfo(semantics_t* sema, const char* identifer);
 void check_function(semantics_t* sema, item_t* item);
 expr_result_t check_expr(semantics_t* sema, expr_t* expr);
 stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt);
@@ -80,6 +93,8 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt);
 type_t* check_type(semantics_t* sema, type_t* type);
 type_t* get_type_info(semantics_t* sema, const char* type_name);
 bool type_match(semantics_t* sema, type_t* t1, type_t* t2);
+
+void add_diagnostic(semantics_t* sema, sema_error_t* err);
 
 void stream_out(semantics_t* sema, const char* fmt, ...) {
     va_list args;
@@ -92,6 +107,10 @@ void stream_out(semantics_t* sema, const char* fmt, ...) {
     va_end(args);
 }
 
+void add_diagnostic(semantics_t* sema, sema_error_t* err) {
+    cjvec_push(sema->diagnostics, (void*)err);
+}
+
 void add_func(semantics_t* sema, funcdef_t func) {
     function_info_t* finfo = func_info_new(func.name, func.linkage_name, func.name, NULL, func.return_type);
     jmap_put(sema->functions, func.name, (void*)finfo);
@@ -99,6 +118,14 @@ void add_func(semantics_t* sema, funcdef_t func) {
 
 void add_type(semantics_t* sema, const char* name, type_t* type) {
     jmap_put(sema->types, name, (void*)type);
+}
+
+void register_sym(semantics_t* sema, const char* name, symbol_info_t* sym) {
+    jmap_put(sema->symbols, name, (void*)sym);
+}
+
+symbol_info_t* get_syminfo(semantics_t* sema, const char* identifer) {
+    return jmap_get(sema->symbols, identifer);
 }
 
 void check_function(semantics_t* sema, item_t* item) {
@@ -118,9 +145,11 @@ void check_function(semantics_t* sema, item_t* item) {
             }
         }
     }
+    
     if (strcmp(funcdef.name,"main") == 0) {
         final_ty = get_type_info(sema, "int");
     }
+    
     stream_out(sema, "%s %s ()\n", type_get_repr(final_ty), funcdef.name);
     if (funcdef.is_decl) stream_out(sema, ";");
     else {
@@ -161,13 +190,21 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
             if (!final_ty) {
                 // ERROR_IMPLEMENTAION
                 log_err("invalid type: '%s'\n", type_get_name(vardecl.type));
-                todo("error_implementation");                    
+                todo("error_implementation");
+            }
+            
+            if (!type_match(sema, final_ty, expr.type)) {
+                add_diagnostic(sema, make_invalid_type(vardecl.rhs->span, type_get_name(expr.type), type_get_name(final_ty)));
+                return sresult_new(NULL);
             }
         }
         
         jb_appendf_a(code, global_arena, "\n\t%s %s = %s;", type_get_repr(final_ty), vardecl.identifer, expr.result);
+        register_sym(sema, vardecl.identifer, syminfo_new(vardecl.identifer, vardecl.span, final_ty, sym_variable_k));
     }
-    return sresult_new(jb_str_a(code, global_arena));
+    const char* res = jb_str_a(code, global_arena);
+    jb_free(code);
+    return sresult_new(res);
 }
 
 expr_result_t check_expr(semantics_t* sema, expr_t* expr) {
@@ -175,18 +212,34 @@ expr_result_t check_expr(semantics_t* sema, expr_t* expr) {
     switch(expr->kind) {
     case expr_compound_stmt_k: {
         block_t block = expr->data.block;
-        int stmt_count = jvec_len(block.statements);
-        for (int i = 0; i < stmt_count; ++i) {
-            stmt_t* stmt = (stmt_t*)jvec_at(block.statements, i);
+        fori(stmt_t*, stmt, stmt_count, block.statements) {
             stmt_result_t res = check_stmt(sema, stmt);
             jb_appendf_a(code, global_arena, "%s", res.result);
-        }
+        }        
+        const char* res = jb_str_a(code, global_arena);
         
-        return eresult_new(jb_str_a(code, global_arena), NULL, NULL);
+        jb_free(code);
+        return eresult_new(res, NULL, NULL);
     } break;
     case expr_int_k: {
         jb_appendf_a(code, global_arena, "%ld", expr->data.literal.lit.int_value);
-        return eresult_new(jb_str_a(code, global_arena), NULL, get_type_info(sema, "int"));
+        const char* res = jb_str_a(code, global_arena);
+        jb_free(code);
+        return eresult_new(res, NULL, get_type_info(sema, "int"));
+    } break;
+    case expr_ident_k: {
+        const char* identifer = expr->data.literal.lit.str_value;
+        jb_appendf_a(code, global_arena, "%s", identifer);
+        const char* res = jb_str_a(code, global_arena);
+        jb_free(code);
+
+        symbol_info_t* syminfo = get_syminfo(sema, identifer);
+        if (!syminfo) {
+            add_diagnostic(sema, make_undeclared_var(expr->span, identifer));
+            return eresult_new(res, NULL, get_type_info(sema, "int"));   
+        }
+        type_t* var_type = syminfo_get_type(syminfo);
+        return eresult_new(res, NULL, get_type_info(sema, type_get_name(var_type)));
     } break;    
     default:
         todo("semantics_t::check_expr::default");
@@ -219,30 +272,30 @@ type_t*  check_type(semantics_t* sema, type_t* type) {
     return NULL;
 }
 
+cjvec_t* sema_get_diagnostics(semantics_t* sema) {
+    return sema->diagnostics;
+}
+
 bool sema_run_first_pass(semantics_t* sema) {
-    int item_count = jvec_len(sema->program);
-    for (int i = 0; i < item_count; ++i) {
-        item_t* item = (item_t*)jvec_at(sema->program, i);
+    fori(item_t*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             add_func(sema, item->data.fndef);
-        }
-    }
+        }        
+    }        
     return true;
 }
 
 bool sema_run_second_pass(semantics_t* sema) {
-    int item_count = jvec_len(sema->program);
-    for (int i = 0; i < item_count; ++i) {
-        item_t* item = (item_t*)jvec_at(sema->program, i);
+    fori(item_t*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             check_function(sema, item);
-        }
-    }
+        }        
+    }    
     return true;
 }
 
 bool sema_check(semantics_t* sema) {        
     if (!sema_run_first_pass(sema)) return false;
     if (!sema_run_second_pass(sema)) return false;
-    return true;
+    return cjvec_len(sema->diagnostics) == 0;
 }

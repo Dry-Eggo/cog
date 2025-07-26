@@ -13,3 +13,4 @@ typedef enum {
 typedef struct symbol_info_s symbol_info_t;
 
 symbol_info_t* syminfo_new(const char* name, span_t decl, type_t* type, symtype_t kind);
+type_t* syminfo_get_type(symbol_info_t* sym);

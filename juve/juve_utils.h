@@ -54,13 +54,23 @@ void*  jvec_at(juve_vec_t*, size_t);
 void* jvec_back(juve_vec_t*);
 void  jvec_free(juve_vec_t*);
 
-
 juve_map_t* jmap_new();
 void jmap_put(juve_map_t*, const char*, void*);
 int jmap_has(juve_map_t*, const char*);
 void* jmap_get(juve_map_t*, const char*);
 void jmap_free(juve_map_t*);
 
+// c-containers
+typedef struct cjvec_t cjvec_t;
+typedef void (*cjvec_free_fn)(void*, void*);
+cjvec_t* cjvec_new(juve_arena_t* arena);
+cjvec_t* cjvec_lines();
+void cjvec_push(cjvec_t* vec, void* data);
+size_t cjvec_len(cjvec_t*);
+void*  cjvec_at(cjvec_t*, size_t);
+void* cjvec_back(cjvec_t*);
+void  cjvec_free(cjvec_t*);
+void  cjvec_free_all(cjvec_t* vec, void* user_data, cjvec_free_fn fn);
 
 // cli
 typedef struct jcli_args jcli_args_t;

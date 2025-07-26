@@ -20,4 +20,5 @@ typedef struct {
 } token_t;
 
 span_t* span_new(size_t line, size_t col, size_t off, const char* filename);
+span_t span_merge(span_t*, span_t*);
 token_t* token_new(span_t* span, token_kind_t kind, const char* text);
