@@ -27,10 +27,9 @@ driver_t* driver_new(const char* source, compile_options_t* opts) {
     return driver;
 }
 
-void kudo_compile(compile_options_t* compile_options, jcli_args_t* args) {
+void kudo_compile(compile_options_t* compile_options) {
     if (!jfile_exists(compile_options->input_file)) {
 	    log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
-	    jcli_args_free(args);
 	    exit(1);
     }
     
@@ -59,7 +58,6 @@ void kudo_compile(compile_options_t* compile_options, jcli_args_t* args) {
 	    syntax_error_flush(driver->parser->errors, driver->source_lines);
 	    fprintf(stderr, "Kudo: %ld parsing errors occured\n", jvec_len(driver->parser->errors));
 	    jb_free(buffer);
-	    jcli_args_free(args);
 	    abort_compilation(driver);
     }
 

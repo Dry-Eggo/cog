@@ -29,4 +29,4 @@ typedef struct {
 
 driver_t* driver_new(const char* source, compile_options_t* opts);
 
-void kudo_compile(compile_options_t* opts, jcli_args_t* args);
+void kudo_compile(compile_options_t* opts);
