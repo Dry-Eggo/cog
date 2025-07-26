@@ -68,7 +68,7 @@ void kudo_compile(compile_options_t* compile_options, jcli_args_t* args) {
     driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
     sema_check(driver->sema);
 
-    jb_print(driver->sema->tmp_out);
+    jb_print(sema_get_tmp(driver->sema));
     
     jb_free(buffer);
 }

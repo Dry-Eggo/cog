@@ -11,3 +11,8 @@
 fprintf(stderr, "Unimplemented %s:%d: "msg"\n", __FILE__, __LINE__, ##__VA_ARGS__);\
 exit(1);\
 } while (0)
+
+#define unreachable do {\
+fprintf(stderr, "Unreachable %s:%d\n", __FILE__, __LINE__)\
+exit(1)\
+} while (0)

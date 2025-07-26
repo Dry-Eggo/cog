@@ -6,6 +6,28 @@
 #include <string.h>
 #include <stdarg.h>
 
+struct semantics_s {
+    juve_vec_t* program;
+    juve_vec_t* diagnostics;
+    juve_vec_t* source_lines;
+
+    juve_map_t* functions;
+    juve_map_t* types;
+    juve_map_t* symbols;
+    
+    compile_options_t* options;
+
+    const char* source;
+
+    // for temporar visualizaton of the generated code
+    // will be delegated to a proper backend dispatcher
+    juve_buffer_t* tmp_out;
+};
+
+juve_buffer_t* sema_get_tmp(semantics_t* sema) {
+    return sema->tmp_out;
+}
+
 typedef struct {
     const char* result;
     const char* preamble;
@@ -81,8 +103,25 @@ void add_type(semantics_t* sema, const char* name, type_t* type) {
 
 void check_function(semantics_t* sema, item_t* item) {
     funcdef_t funcdef = item->data.fndef;
+    type_t* final_ty = NULL;
     if (funcdef.is_extern) stream_out(sema, "extern ");
-    stream_out(sema, "int %s ()\n", funcdef.name);
+
+    if (funcdef.return_type) {
+        if (type_get_kind(funcdef.return_type) == type_any_k) {
+            todo("funcdef.return_type == any");
+        } else {        
+            final_ty = get_type_info(sema, type_get_name(funcdef.return_type));
+            if (!final_ty) {
+                // ERROR_IMPLEMENTATION
+                log_err("invalid type: '%s'\n", type_get_name(funcdef.return_type));
+                todo("error_implementation");
+            }
+        }
+    }
+    if (strcmp(funcdef.name,"main") == 0) {
+        final_ty = get_type_info(sema, "int");
+    }
+    stream_out(sema, "%s %s ()\n", type_get_repr(final_ty), funcdef.name);
     if (funcdef.is_decl) stream_out(sema, ";");
     else {
         stream_out(sema, "{");
@@ -101,6 +140,15 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
     if (stmt->kind == stmt_vardecl_k) {
         vardecl_t vardecl = stmt->data.vardecl;
         expr_result_t expr = check_expr(sema, vardecl.rhs);
+
+        if (type_get_kind(vardecl.type) == type_any_k) {
+            if (!expr.type) {
+                // ERROR_IMPLEMENTAION
+                log_err("invalid inference\n");
+                todo("error_implementation");
+            }
+        }
+        
         jb_appendf_a(code, global_arena, "\n\tint %s = %s;", vardecl.identifer, expr.result);
     }
     return sresult_new(jb_str_a(code, global_arena));
@@ -140,13 +188,13 @@ type_t* get_type_info(semantics_t* sema, const char* type_name) {
 
 bool type_match(semantics_t* sema, type_t* t1, type_t* t2) {
     // todo: more structural comparison
-    return t1->kind == t2->kind;
+    return type_get_kind(t1) == type_get_kind(t2);
 }
 
 type_t*  check_type(semantics_t* sema, type_t* type) {
 
     if (type) {
-        if (type->kind == type_int_k) {
+        if (type_get_kind(type) == type_int_k) {
             type_t* int_type = get_type_info(sema, "int");
             return int_type;
         }
