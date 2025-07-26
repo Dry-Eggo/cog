@@ -61,17 +61,23 @@ void print_gutter_with_line(size_t lineno, const char* line) {
     fprintf(stderr, " %5.zu |%s\n", lineno, line);
 }
 
-void report_err(syntax_error_t* err, const char* line) {
+void report_err(syntax_error_t* err, const char* line, juve_vec_t* source) {
     span_t span = err->span;
+
+    const char* prev_line = span.line - 1 > 1 ? jvec_at(source, span.line - 2) : NULL;
+    
     fprintf(stderr, "%sKudo%s: %s%sSyntax Error%s: (%ld:%ld): %s\n", c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err->message);
     fprintf(stderr, "    ----> %s\n", span.filename);
-    fprintf(stderr, "   |\n");
-    fprintf(stderr, " %ld |%s\n", span.line, line);
-    fprintf(stderr, "   |");
+    print_gutter_line(true);
+    if (prev_line) {
+        print_gutter_with_line(span.line - 1, prev_line);
+    }
+    print_gutter_with_line(span.line, line);
+    print_gutter_line(false);
     underline_span(span, line);
     if (err->hint) {
-        fprintf(stderr, ": %s%s%s", c(color_blue_k), err->hint, c(color_reset_k));
+        fprintf(stderr, " : %s%s%s", c(color_blue_k), err->hint, c(color_reset_k));
     }
     fprintf(stderr,"\n");
 }
@@ -81,7 +87,7 @@ void syntax_error_flush(cjvec_t* errors, juve_vec_t* source) {
     for (int i = 0; i < err_count; ++i) {
 	    syntax_error_t* err = (syntax_error_t*)cjvec_at(errors, i);
 	    const char* line = jvec_at(source, err->span.line - 1);
-	    report_err(err, line);
+	    report_err(err, line, source);
     }
 }
 
@@ -92,7 +98,7 @@ void format_err_inv_ty(invalid_type_e err, juve_vec_t* source) {
     fprintf(stderr, "%sKudo%s: %s%sType Error%s: (%ld:%ld): cannot implicitly convert from '%s' to '%s'\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.got, err.expected);
-
+    fprintf(stderr, "    ----> %s\n", span.filename);
     print_gutter_line(true);
     if (line1) {
         print_gutter_with_line(span.line - 1, line1);
@@ -110,7 +116,7 @@ void format_err_un_var(undeclared_var_e err, juve_vec_t* source) {
     fprintf(stderr, "%sKudo%s: %s%sError%s: (%ld:%ld): symbol '%s' was not declared in this scope\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.name);
-
+    fprintf(stderr, "    ----> %s\n", span.filename);
     print_gutter_line(true);
     if (line1) {
         print_gutter_with_line(span.line - 1, line1);
