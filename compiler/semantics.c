@@ -59,7 +59,7 @@ Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, 
     sema->source = source;
     sema->options = opts;
 
-    sema->ccontext = cctx_new();
+    sema->ccontext = cctx_new(global_arena);
     
     sema->diagnostics = cjvec_new(global_arena);
     sema->tmp_out = jb_create();
@@ -76,6 +76,10 @@ Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, 
     jmap_put(sema->types, "none", type_new(type_none_k, "none", "void"));
     
     return sema;
+}
+
+CContext* sema_get_cctx(Semantics* sema) {
+    return sema->ccontext;
 }
 
 void sema_free(Semantics* sema) {
@@ -97,6 +101,9 @@ stmt_result_t check_stmt(Semantics* sema, Stmt* stmt);
 TypeInfo* check_type(Semantics* sema, TypeInfo* type);
 TypeInfo* get_type_info(Semantics* sema, const char* type_name);
 bool type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2);
+
+// cbackend
+CType* sema_convert_type(Semantics* sema, TypeInfo* ty);
 
 void add_diagnostic(Semantics* sema, sema_error_t* err);
 
@@ -132,6 +139,10 @@ SymInfo* get_syminfo(Semantics* sema, const char* identifer) {
     return jmap_get(sema->symbols, identifer);
 }
 
+CType* sema_convert_type(Semantics* sema, TypeInfo* ty) {
+    return cctx_create_type_int32(sema->ccontext, CIntSigned, false);
+}
+
 void check_function(Semantics* sema, Item* item) {
     FunctionDef funcdef = item->data.fndef;
     TypeInfo* final_ty = NULL;
@@ -153,7 +164,10 @@ void check_function(Semantics* sema, Item* item) {
     if (strcmp(funcdef.name,"main") == 0) {
         final_ty = get_type_info(sema, "int");
     }
+
+    CType* functype = sema_convert_type(sema, final_ty);
     
+    CFunction* func =  cctx_create_function(sema->ccontext, funcdef.name, NULL, NULL, functype);
     stream_out(sema, "%s %s ()\n", type_get_repr(final_ty), funcdef.name);
     if (funcdef.is_decl) stream_out(sema, ";");
     else {
@@ -166,6 +180,7 @@ void check_function(Semantics* sema, Item* item) {
         }
         stream_out(sema, "\n}\n");
     }
+    cctx_end_function(sema->ccontext, func, NULL);
 }
 
 stmt_result_t check_stmt(Semantics* sema, Stmt* stmt) {

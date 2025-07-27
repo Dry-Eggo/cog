@@ -74,10 +74,10 @@ void kudo_compile(CompileOptions* compile_options) {
         sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
         abort_compilation(driver);
     }
-
-    driver->phase = phase_codegen_k;
     
-    // jb_print(sema_get_tmp(driver->sema));    
+    driver->phase = phase_codegen_k;
+    jb_print(cctx_get_output(sema_get_cctx(driver->sema)));
+    
     jb_free(buffer);
     driver_free(driver);
 }

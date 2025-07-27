@@ -1,6 +1,7 @@
 #pragma once
 #include <compiler.h>
 #include <compiler_opt.h>
+#include <c_backend.h>
 
 typedef struct Semantics Semantics;
 
@@ -9,3 +10,4 @@ CJVec* sema_get_diagnostics(Semantics* sema);
 void sema_free(Semantics* sema);
 bool sema_check(Semantics*);
 juve_buffer_t* sema_get_tmp(Semantics* sema);
+CContext* sema_get_cctx(Semantics* sema);
