@@ -1,5 +1,11 @@
 # emacs shit
 *~
+*#
 
 # obj files
 *.o
+
+# gtags
+GTAGS
+GRTAGS
+GPATH
