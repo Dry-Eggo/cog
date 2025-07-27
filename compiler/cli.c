@@ -9,7 +9,7 @@ extern void print_usage(const char* prog);
 
 char* shift(int* c, char** v) { return v[(*c)++]; }
 
-void parse_short_flag(compile_options_t* opts, char flag, int* i, int argc, char** argv) {
+void parse_short_flag(CompileOptions* opts, char flag, int* i, int argc, char** argv) {
     switch (flag) {
     case 'i':
         if (*i < argc) {
@@ -49,7 +49,7 @@ void parse_short_flag(compile_options_t* opts, char flag, int* i, int argc, char
     }
 }
 
-void parse_short_flags(compile_options_t* opts, int* i, int argc, char** argv) {
+void parse_short_flags(CompileOptions* opts, int* i, int argc, char** argv) {
     const char* arg = argv[*i - 1] + 1;
     size_t len = strlen(arg);
     if (len > 1) {
@@ -69,7 +69,7 @@ void parse_short_flags(compile_options_t* opts, int* i, int argc, char** argv) {
     }
 }
 
-void parse_long_flags(compile_options_t* opts, int* i, int argc, char** argv) {
+void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
     char* arg = argv[*i - 1] + 2;
     size_t len = strlen(arg);
 
@@ -130,7 +130,7 @@ void parse_long_flags(compile_options_t* opts, int* i, int argc, char** argv) {
     }
 }
 
-void parse_args(compile_options_t* opts, int argc, char** argv) {
+void parse_args(CompileOptions* opts, int argc, char** argv) {
     int i = 0;
     opts->program_name = shift(&i, argv);
 

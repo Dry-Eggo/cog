@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <semantics.h>
 
-void driver_free(driver_t* driver);
+void driver_free(Driver* driver);
 
-void abort_compilation(driver_t* driver) {
+void abort_compilation(Driver* driver) {
     int exit_code = 1;
     if (driver) {
         exit_code = driver->options->test_mode ? 0 : 1;
@@ -19,8 +19,8 @@ void abort_compilation(driver_t* driver) {
     exit(exit_code);
 }
 
-driver_t* driver_new(const char* source, compile_options_t* opts) {
-    driver_t* driver = (driver_t*)jarena_alloc(global_arena, sizeof(driver_t));
+Driver* driver_new(const char* source, CompileOptions* opts) {
+    Driver* driver = (Driver*)jarena_alloc(global_arena, sizeof(Driver));
     driver->options = opts;
     driver->phase = phase_lexer_k;
     driver->source = source;
@@ -28,12 +28,12 @@ driver_t* driver_new(const char* source, compile_options_t* opts) {
     return driver;
 }
 
-void driver_free(driver_t* driver) {    
+void driver_free(Driver* driver) {    
     jvec_free(driver->source_lines);
     if (driver->phase >= phase_sema_k) sema_free(driver->sema);
 }
 
-void kudo_compile(compile_options_t* compile_options) {
+void kudo_compile(CompileOptions* compile_options) {
     if (!jfile_exists(compile_options->input_file)) {
 	    log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
         abort_compilation(NULL);
@@ -44,7 +44,7 @@ void kudo_compile(compile_options_t* compile_options) {
 
     const char* source = jb_str_a(buffer, global_arena);
     
-    driver_t* driver = driver_new(source, compile_options);
+    Driver* driver = driver_new(source, compile_options);
     
     driver->lexer = lexer_new(compile_options, source);
     lexer_lex(driver->lexer);
@@ -53,7 +53,7 @@ void kudo_compile(compile_options_t* compile_options) {
 	    printf("========================\n");
 	    int max = cjvec_len(driver->lexer->tokens);
 	    for (int i = 0; i < max; ++i) {
-	        token_t tok = *(token_t*)cjvec_at(driver->lexer->tokens, i);
+	        Token tok = *(Token*)cjvec_at(driver->lexer->tokens, i);
 	        printf("|| Token(%d : '%s')\n", (int)tok.kind, tok.text);
 	    }
 	    printf("========================\n");
@@ -76,12 +76,8 @@ void kudo_compile(compile_options_t* compile_options) {
     }
 
     driver->phase = phase_codegen_k;
-    driver->c_ctx = c_ctx_new(driver->parser->items, compile_options);
-    if (!c_ctx_emit(driver->c_ctx)) {
-        jb_print(c_ctx_get_output(driver->c_ctx));
-    }
     
-    jb_print(sema_get_tmp(driver->sema));    
+    // jb_print(sema_get_tmp(driver->sema));    
     jb_free(buffer);
     driver_free(driver);
 }

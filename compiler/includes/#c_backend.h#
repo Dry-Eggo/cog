@@ -31,6 +31,8 @@ void       cctx_end_function(CContext* cctx, CFunction* func, CValue* value);
 
 CType*     cctx_create_int_type(CContext* cctx, CIntSign sign);
 
+CValue*    cctx_create_int()
+
 JBuffer* cctx_get_output(CContext* ctx);
 void cctx_free(CContext* ctx);
 

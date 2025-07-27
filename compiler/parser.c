@@ -10,8 +10,8 @@
 #define get_span(p) (*parser_now(p)->span)
 #define get_pspan(p) (parser_now(p)->span)
 
-parser_t* parser_new(compile_options_t* opts, cjvec_t* tokens, const char* source) {
-    parser_t* parser = (parser_t*)jarena_alloc(global_arena, sizeof(parser_t));
+Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source) {
+    Parser* parser = (Parser*)jarena_alloc(global_arena, sizeof(Parser));
     parser->tokens = tokens;
     parser->source = source;
     parser->items = cjvec_new(global_arena);
@@ -21,44 +21,44 @@ parser_t* parser_new(compile_options_t* opts, cjvec_t* tokens, const char* sourc
     return parser;
 }
 
-token_t* parser_now(parser_t* parser);
-token_t* parser_peek(parser_t* parser);
-token_t* parser_before(parser_t* parser);
-item_t*  parse_item(parser_t* parser);
-item_t*  parse_function(parser_t* parser);
+Token* parser_now(Parser* parser);
+Token* parser_peek(Parser* parser);
+Token* parser_before(Parser* parser);
+Item*  parse_item(Parser* parser);
+Item*  parse_function(Parser* parser);
 
-expr_t*  parse_body(parser_t* parser);
-expr_t*  parse_expr(parser_t* parser);
-expr_t*  parse_logical_or(parser_t* parser);
-expr_t*  parse_logical_and(parser_t* parser);
-expr_t*  parse_equality(parser_t* parser);
-expr_t*  parse_conditional(parser_t* parser);
-expr_t*  parse_additive(parser_t* parser);
-expr_t*  parse_term(parser_t* parser);
-expr_t*  parse_atom(parser_t* parser);
+Expr*  parse_body(Parser* parser);
+Expr*  parse_expr(Parser* parser);
+Expr*  parse_logical_or(Parser* parser);
+Expr*  parse_logical_and(Parser* parser);
+Expr*  parse_equality(Parser* parser);
+Expr*  parse_conditional(Parser* parser);
+Expr*  parse_additive(Parser* parser);
+Expr*  parse_term(Parser* parser);
+Expr*  parse_atom(Parser* parser);
 
-stmt_t*  parse_stmt(parser_t* parser);
+Stmt*  parse_stmt(Parser* parser);
 
-type_t* parse_type(parser_t* parser);
+TypeInfo* parse_type(Parser* parser);
 
-void     parser_advance(parser_t* parser);
-bool match(parser_t* parser, token_kind_t k);
-void recover(parser_t* parser);
-void recover_until(parser_t* parser, token_kind_t k);
-bool expect(parser_t* parser, token_kind_t k);
-void add_error(parser_t* parser, syntax_error_t* error);
+void     parser_advance(Parser* parser);
+bool match(Parser* parser, token_kind_t k);
+void recover(Parser* parser);
+void recover_until(Parser* parser, token_kind_t k);
+bool expect(Parser* parser, token_kind_t k);
+void add_error(Parser* parser, SyntaxError* error);
 
-void recover(parser_t* parser) {
+void recover(Parser* parser) {
     while (!match(parser, token_eof_k) && !match(parser, token_semi_k)) {
 	    parser_advance(parser);
     }
 }
 
-void add_error(parser_t* parser, syntax_error_t* error) {
+void add_error(Parser* parser, SyntaxError* error) {
     cjvec_push(parser->errors, (void*)error);
 }
 
-bool expect(parser_t* parser, token_kind_t k) {
+bool expect(Parser* parser, token_kind_t k) {
     if (match(parser, k)) {
 	    parser_advance(parser);
 	    return true;
@@ -66,50 +66,50 @@ bool expect(parser_t* parser, token_kind_t k) {
     return false;
 }
 
-void recover_until(parser_t* parser, token_kind_t k) {
+void recover_until(Parser* parser, token_kind_t k) {
     while (!match(parser, token_eof_k) && !match(parser, k)) {
 	    parser_advance(parser);
     }
 }
 
-void parser_advance(parser_t* parser) {
+void parser_advance(Parser* parser) {
     parser->cursor++;
 }
 
-bool match(parser_t* parser, token_kind_t k) {
+bool match(Parser* parser, token_kind_t k) {
     return (parser_now(parser)->kind == k);
 }
 
-token_t* parser_now(parser_t* parser) {
+Token* parser_now(Parser* parser) {
     if (parser->cursor < cjvec_len(parser->tokens)) {
-	    return (token_t*)cjvec_at(parser->tokens, parser->cursor);
+	    return (Token*)cjvec_at(parser->tokens, parser->cursor);
     }
     // guaranteed to be eof_token
-    return (token_t*)cjvec_back(parser->tokens);
+    return (Token*)cjvec_back(parser->tokens);
 }
 
-token_t* parser_peek(parser_t* parser) {
+Token* parser_peek(Parser* parser) {
     if (parser->cursor + 1 < cjvec_len(parser->tokens)) {
-	    return (token_t*)cjvec_at(parser->tokens, parser->cursor + 1);
+	    return (Token*)cjvec_at(parser->tokens, parser->cursor + 1);
     }
     // guaranteed to be eof_token
-    return (token_t*)cjvec_back(parser->tokens);
+    return (Token*)cjvec_back(parser->tokens);
 }
 
-token_t* parser_before(parser_t* parser) {
+Token* parser_before(Parser* parser) {
     if (parser->cursor > 0) {
-	    return (token_t*)cjvec_at(parser->tokens, parser->cursor - 1);
+	    return (Token*)cjvec_at(parser->tokens, parser->cursor - 1);
     }
     // guaranteed to be eof_token
-    return (token_t*)cjvec_back(parser->tokens);
+    return (Token*)cjvec_back(parser->tokens);
 }
 
-item_t* parse_function(parser_t* parser) {
-    span_t* start = get_pspan(parser);
+Item* parse_function(Parser* parser) {
+    Span* start = get_pspan(parser);
     expect(parser, token_func_k);
     
-    type_t* return_type = type_new(type_none_k, "none", "void");
-    funcdef_t funcdef = {0};
+    TypeInfo* return_type = type_new(type_none_k, "none", "void");
+    FunctionDef funcdef = {0};
     
     if (match(parser, token_ident_k)) {
 	    funcdef.name = parser_now(parser)->text;
@@ -140,18 +140,18 @@ item_t* parse_function(parser_t* parser) {
     funcdef.body = parse_expr(parser);
     parser->current_context = parse_context_no_set;
 
-    span_t* end = get_pspan(parser);
+    Span* end = get_pspan(parser);
     
     return item_make_fndef(funcdef, span_merge(start, end));
 }
 
-stmt_t* parse_stmt(parser_t* parser) {
-    stmt_t* stmt = NULL;
+Stmt* parse_stmt(Parser* parser) {
+    Stmt* stmt = NULL;
     if (match(parser, token_let_k)) {
-        span_t* start = get_pspan(parser);
+        Span* start = get_pspan(parser);
         parser_advance(parser);
 
-        vardecl_t vardecl = {0};
+        VarDeclStmt vardecl = {0};
         
         bool is_const = true;        
         const bool is_uninit = false; // always false for 'let' bindings        
@@ -160,7 +160,7 @@ stmt_t* parse_stmt(parser_t* parser) {
             vardecl.identifer = parser_now(parser)->text;
             parser_advance(parser);
         } else if (match(parser, token_oparen_k)) {
-            todo("parser_t::parse_stmt::parse_vardecl: parse_pattern");
+            todo("Parser::parse_stmt::parse_vardecl: parse_pattern");
         } else {
             add_error(parser, make_syntax_error(*parser_now(parser)->span, "Unqualified token", "expected an identifier or pattern"));
             recover_until(parser, token_semi_k);
@@ -181,68 +181,68 @@ stmt_t* parse_stmt(parser_t* parser) {
             todo("invalid syntax");
         }
 
-        parse_context_t prev_ctx = parser->current_context;
+        ParseContext prev_ctx = parser->current_context;
         parser->current_context = parse_vardecl_expr_k;
         vardecl.rhs = parse_expr(parser);
         parser->current_context = prev_ctx;
         
-        span_t* end = get_pspan(parser);
+        Span* end = get_pspan(parser);
         if (!expect(parser, token_semi_k)) {
             err_semi(parser);
         }
         return stmt_make_vardecl(vardecl, span_merge(start, end));
     }
-    todo("parser_t::parse_stmt: '%s'", parser_now(parser)->text);
+    todo("Parser::parse_stmt: '%s'", parser_now(parser)->text);
     return stmt;
 }
 
-item_t* parse_item(parser_t* parser) {
-    item_t* item = NULL;
+Item* parse_item(Parser* parser) {
+    Item* item = NULL;
     if (match(parser, token_func_k)) {
 	    item = parse_function(parser);
     } else {
-	    todo("parser_t::parse_item: other items");
+	    todo("Parser::parse_item: other items");
     }
     return item;
 }
 
-expr_t*  parse_expr(parser_t* parser) {
-    expr_t* expr = parse_logical_or(parser);
+Expr*  parse_expr(Parser* parser) {
+    Expr* expr = parse_logical_or(parser);
     return expr;
 }
 
-expr_t*  parse_logical_or(parser_t* parser) {
-    expr_t* lhs = parse_logical_and(parser);
+Expr*  parse_logical_or(Parser* parser) {
+    Expr* lhs = parse_logical_and(parser);
     return lhs;
 }
 
-expr_t*  parse_logical_and(parser_t* parser) {
-    expr_t* lhs = parse_equality(parser);
+Expr*  parse_logical_and(Parser* parser) {
+    Expr* lhs = parse_equality(parser);
     return lhs;
 }
 
-expr_t*  parse_equality(parser_t* parser) {
-    expr_t* lhs = parse_conditional(parser);
+Expr*  parse_equality(Parser* parser) {
+    Expr* lhs = parse_conditional(parser);
     return lhs;
 }
 
-expr_t*  parse_conditional(parser_t* parser) {
-    expr_t* lhs = parse_additive(parser);
+Expr*  parse_conditional(Parser* parser) {
+    Expr* lhs = parse_additive(parser);
     return lhs;
 }
 
-expr_t*  parse_additive(parser_t* parser) {
-    expr_t* lhs = parse_term(parser);
+Expr*  parse_additive(Parser* parser) {
+    Expr* lhs = parse_term(parser);
     return lhs;
 }
 
-expr_t*  parse_term(parser_t* parser) {
-    expr_t* lhs = parse_atom(parser);
+Expr*  parse_term(Parser* parser) {
+    Expr* lhs = parse_atom(parser);
     return lhs;
 }
 
-expr_t*  parse_atom(parser_t* parser) {
-    expr_t* expr = NULL;
+Expr*  parse_atom(Parser* parser) {
+    Expr* expr = NULL;
     if (match(parser, token_obrace_k)) {
 	    parser_advance(parser);
 	    expr = parse_body(parser);
@@ -251,12 +251,12 @@ expr_t*  parse_atom(parser_t* parser) {
 	        return NULL;
 	    }
     } else if (match(parser, token_number_k)) {
-        span_t span = get_span(parser);
+        Span span = get_span(parser);
         long value = strtol(parser_now(parser)->text, NULL, 0);
         parser_advance(parser);
         return expr_make_literal_int(value, span);
     } else if (match(parser, token_ident_k)) {
-        span_t span = get_span(parser);
+        Span span = get_span(parser);
         const char* ident = parser_now(parser)->text;
         parser_advance(parser);
         return expr_make_identifier(ident, span);
@@ -269,18 +269,16 @@ expr_t*  parse_atom(parser_t* parser) {
     return expr;
 }
 
-expr_t* parse_body(parser_t* parser) {
-    cjvec_t* stmts = cjvec_new(global_arena);
+Expr* parse_body(Parser* parser) {
+    CJVec* stmts = cjvec_new(global_arena);
     while (!match(parser, token_eof_k) && !match(parser, token_cbrace_k)) {
-	    stmt_t* stmt = parse_stmt(parser);
+	    Stmt* stmt = parse_stmt(parser);
         cjvec_push(stmts, (void*)stmt);
     }    
     return expr_make_block(stmts);
 }
 
-type_t* parse_type(parser_t* parser) {
-    // type_t::repr should not be set by parser as the target backend
-    // decides what type_t::repr becomes
+TypeInfo* parse_type(Parser* parser) {
     if (match(parser, token_int_k)) {
         parser_advance(parser);
         return type_new(type_int_k, "int", NULL);
@@ -298,16 +296,16 @@ type_t* parse_type(parser_t* parser) {
     return NULL;
 }
 
-bool parser_parse(parser_t* parser) {
+bool parser_parse(Parser* parser) {
     while (!match(parser, token_eof_k)) {
-	    item_t* item = parse_item(parser);
+	    Item* item = parse_item(parser);
 	    cjvec_push(parser->items, (void*)item);
     }
     
     return cjvec_len(parser->errors) == 0;
 }
 
-void parser_free(parser_t* parser) {
+void parser_free(Parser* parser) {
     // do nothing
     // structure lives on the arena
 }

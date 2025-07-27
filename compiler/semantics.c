@@ -7,17 +7,19 @@
 #include <functions.h>
 #include <string.h>
 #include <stdarg.h>
+#include <c_backend.h>
 
-struct semantics_s {
-    cjvec_t* program;
-    cjvec_t* diagnostics;
-    juve_vec_t* source_lines;
+struct Semantics {
+    CContext* ccontext;
+    CJVec* program;
+    CJVec* diagnostics;
+    JVec* source_lines;
 
     juve_map_t* functions;
     juve_map_t* types;
     juve_map_t* symbols;
     
-    compile_options_t* options;
+    CompileOptions* options;
 
     const char* source;
 
@@ -26,7 +28,7 @@ struct semantics_s {
     juve_buffer_t* tmp_out;
 };
 
-juve_buffer_t* sema_get_tmp(semantics_t* sema) {
+juve_buffer_t* sema_get_tmp(Semantics* sema) {
     return sema->tmp_out;
 }
 
@@ -34,7 +36,7 @@ typedef struct {
     const char* result;
     const char* preamble;
 
-    type_t*     type;
+    TypeInfo*     type;
 } expr_result_t;
 
 typedef struct {
@@ -45,17 +47,19 @@ stmt_result_t sresult_new(const char* s) {
     return (stmt_result_t) { s };
 }
 
-expr_result_t eresult_new(const char* s, const char* p, type_t* ty) {
+expr_result_t eresult_new(const char* s, const char* p, TypeInfo* ty) {
     return (expr_result_t) { s, p, ty, };
 }
 
 
-semantics_t* semantics_init(cjvec_t* items, juve_vec_t* source_lines, const char* source, compile_options_t* opts) {
-    semantics_t* sema = alloc(semantics_t);
+Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, CompileOptions* opts) {
+    Semantics* sema = alloc(Semantics);
     sema->program = items;
     sema->source_lines = source_lines;
     sema->source = source;
     sema->options = opts;
+
+    sema->ccontext = cctx_new();
     
     sema->diagnostics = cjvec_new(global_arena);
     sema->tmp_out = jb_create();
@@ -74,7 +78,7 @@ semantics_t* semantics_init(cjvec_t* items, juve_vec_t* source_lines, const char
     return sema;
 }
 
-void sema_free(semantics_t* sema) {
+void sema_free(Semantics* sema) {
     if (sema) {
         jmap_free(sema->types);
         jmap_free(sema->functions);
@@ -83,20 +87,20 @@ void sema_free(semantics_t* sema) {
     }
 }
 
-void register_sym(semantics_t* sema, const char*, symbol_info_t* sym);
-symbol_info_t* get_syminfo(semantics_t* sema, const char* identifer);
-void check_function(semantics_t* sema, item_t* item);
-expr_result_t check_expr(semantics_t* sema, expr_t* expr);
-stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt);
+void register_sym(Semantics* sema, const char*, SymInfo* sym);
+SymInfo* get_syminfo(Semantics* sema, const char* identifer);
+void check_function(Semantics* sema, Item* item);
+expr_result_t check_expr(Semantics* sema, Expr* expr);
+stmt_result_t check_stmt(Semantics* sema, Stmt* stmt);
 
 // returns stored types out of parsed ones
-type_t* check_type(semantics_t* sema, type_t* type);
-type_t* get_type_info(semantics_t* sema, const char* type_name);
-bool type_match(semantics_t* sema, type_t* t1, type_t* t2);
+TypeInfo* check_type(Semantics* sema, TypeInfo* type);
+TypeInfo* get_type_info(Semantics* sema, const char* type_name);
+bool type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2);
 
-void add_diagnostic(semantics_t* sema, sema_error_t* err);
+void add_diagnostic(Semantics* sema, sema_error_t* err);
 
-void stream_out(semantics_t* sema, const char* fmt, ...) {
+void stream_out(Semantics* sema, const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     
@@ -107,30 +111,30 @@ void stream_out(semantics_t* sema, const char* fmt, ...) {
     va_end(args);
 }
 
-void add_diagnostic(semantics_t* sema, sema_error_t* err) {
+void add_diagnostic(Semantics* sema, sema_error_t* err) {
     cjvec_push(sema->diagnostics, (void*)err);
 }
 
-void add_func(semantics_t* sema, funcdef_t func) {
-    function_info_t* finfo = func_info_new(func.name, func.linkage_name, func.name, NULL, func.return_type);
+void add_func(Semantics* sema, FunctionDef func) {
+    FunctionInfo* finfo = func_info_new(func.name, func.linkage_name, func.name, NULL, func.return_type);
     jmap_put(sema->functions, func.name, (void*)finfo);
 }
 
-void add_type(semantics_t* sema, const char* name, type_t* type) {
+void add_type(Semantics* sema, const char* name, TypeInfo* type) {
     jmap_put(sema->types, name, (void*)type);
 }
 
-void register_sym(semantics_t* sema, const char* name, symbol_info_t* sym) {
+void register_sym(Semantics* sema, const char* name, SymInfo* sym) {
     jmap_put(sema->symbols, name, (void*)sym);
 }
 
-symbol_info_t* get_syminfo(semantics_t* sema, const char* identifer) {
+SymInfo* get_syminfo(Semantics* sema, const char* identifer) {
     return jmap_get(sema->symbols, identifer);
 }
 
-void check_function(semantics_t* sema, item_t* item) {
-    funcdef_t funcdef = item->data.fndef;
-    type_t* final_ty = NULL;
+void check_function(Semantics* sema, Item* item) {
+    FunctionDef funcdef = item->data.fndef;
+    TypeInfo* final_ty = NULL;
     if (funcdef.is_extern) stream_out(sema, "extern ");
 
     if (funcdef.return_type) {
@@ -164,12 +168,12 @@ void check_function(semantics_t* sema, item_t* item) {
     }
 }
 
-stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
+stmt_result_t check_stmt(Semantics* sema, Stmt* stmt) {
     juve_buffer_t* code = jb_create();
     if (stmt->kind == stmt_vardecl_k) {
-        vardecl_t vardecl = stmt->data.vardecl;
+        VarDeclStmt vardecl = stmt->data.vardecl;
         expr_result_t expr = check_expr(sema, vardecl.rhs);
-        type_t* final_ty = vardecl.type;
+        TypeInfo* final_ty = vardecl.type;
         
         if (type_get_kind(vardecl.type) == type_any_k) {
             if (!expr.type) {
@@ -207,12 +211,12 @@ stmt_result_t check_stmt(semantics_t* sema, stmt_t* stmt) {
     return sresult_new(res);
 }
 
-expr_result_t check_expr(semantics_t* sema, expr_t* expr) {
+expr_result_t check_expr(Semantics* sema, Expr* expr) {
     juve_buffer_t* code = jb_create();
     switch(expr->kind) {
     case expr_compound_stmt_k: {
-        block_t block = expr->data.block;
-        fori(stmt_t*, stmt, stmt_count, block.statements) {
+        BlockExpr block = expr->data.block;
+        fori(Stmt*, stmt, stmt_count, block.statements) {
             stmt_result_t res = check_stmt(sema, stmt);
             jb_appendf_a(code, global_arena, "%s", res.result);
         }        
@@ -233,51 +237,51 @@ expr_result_t check_expr(semantics_t* sema, expr_t* expr) {
         const char* res = jb_str_a(code, global_arena);
         jb_free(code);
 
-        symbol_info_t* syminfo = get_syminfo(sema, identifer);
+        SymInfo* syminfo = get_syminfo(sema, identifer);
         if (!syminfo) {
             add_diagnostic(sema, make_undeclared_var(expr->span, identifer));
             return eresult_new(res, NULL, get_type_info(sema, "int"));   
         }
-        type_t* var_type = syminfo_get_type(syminfo);
+        TypeInfo* var_type = syminfo_get_type(syminfo);
         return eresult_new(res, NULL, get_type_info(sema, type_get_name(var_type)));
     } break;    
     default:
-        todo("semantics_t::check_expr::default");
+        todo("Semantics::check_expr::default");
         break;
     }
     return eresult_new(NULL, NULL, NULL);
 }
 
-type_t* get_type_info(semantics_t* sema, const char* type_name) {
+TypeInfo* get_type_info(Semantics* sema, const char* type_name) {
     if (!jmap_has(sema->types, type_name)) {
         return NULL;
     }
     return jmap_get(sema->types, type_name);
 }
 
-bool type_match(semantics_t* sema, type_t* t1, type_t* t2) {
+bool type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2) {
     // todo: more structural comparison
     return type_get_kind(t1) == type_get_kind(t2);
 }
 
-type_t*  check_type(semantics_t* sema, type_t* type) {
+TypeInfo*  check_type(Semantics* sema, TypeInfo* type) {
 
     if (type) {
         if (type_get_kind(type) == type_int_k) {
-            type_t* int_type = get_type_info(sema, "int");
+            TypeInfo* int_type = get_type_info(sema, "int");
             return int_type;
         }
     }
-    todo("semantics_t::check_type: add more types");
+    todo("Semantics::check_type: add more types");
     return NULL;
 }
 
-cjvec_t* sema_get_diagnostics(semantics_t* sema) {
+CJVec* sema_get_diagnostics(Semantics* sema) {
     return sema->diagnostics;
 }
 
-bool sema_run_first_pass(semantics_t* sema) {
-    fori(item_t*, item, item_count, sema->program) {
+bool sema_run_first_pass(Semantics* sema) {
+    fori(Item*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             add_func(sema, item->data.fndef);
         }        
@@ -285,8 +289,8 @@ bool sema_run_first_pass(semantics_t* sema) {
     return true;
 }
 
-bool sema_run_second_pass(semantics_t* sema) {
-    fori(item_t*, item, item_count, sema->program) {
+bool sema_run_second_pass(Semantics* sema) {
+    fori(Item*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             check_function(sema, item);
         }        
@@ -294,7 +298,7 @@ bool sema_run_second_pass(semantics_t* sema) {
     return true;
 }
 
-bool sema_check(semantics_t* sema) {        
+bool sema_check(Semantics* sema) {        
     if (!sema_run_first_pass(sema)) return false;
     if (!sema_run_second_pass(sema)) return false;
     return cjvec_len(sema->diagnostics) == 0;

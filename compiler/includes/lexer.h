@@ -3,6 +3,7 @@
 #include <token.h>
 #include <juve_utils.h>
 #include <compiler_opt.h>
+#include <compiler.h>
 
 typedef struct {
     size_t cursor;
@@ -13,9 +14,9 @@ typedef struct {
     const char* source;
     const char* source_path;
     
-    cjvec_t* tokens;
-} lexer_t;
+    CJVec* tokens;
+} Lexer;
 
-lexer_t* lexer_new(compile_options_t*, const char* source);
-bool lexer_lex(lexer_t* lexer);
-void lexer_free(lexer_t*);
+Lexer* lexer_new(CompileOptions*, const char* source);
+bool lexer_lex(Lexer* lexer);
+void lexer_free(Lexer*);

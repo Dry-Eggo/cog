@@ -3,12 +3,13 @@
 #include <enum.h>
 #include <token.h>
 #include <types.h>
+#include <compiler.h>
 
-typedef struct expr_ expr_t;
-typedef struct stmt_ stmt_t;
+typedef struct expr_ Expr;
+typedef struct stmt_ Stmt;
 
 typedef struct expr_literal {
-    span_t span;
+    Span span;
     literal_kind_t kind;
     union {
 	    const char* str_value; /* used for both identifers and any value that requires string storage */
@@ -17,43 +18,43 @@ typedef struct expr_literal {
 	    char char_value;
 	    float float_value;
     } lit;
-} literal_t;
+} LiteralExpr;
 
 typedef struct stmt_vardecl {
-    span_t span;
+    Span span;
     var_decl_kind_t kind;    
     bool is_uninit;
     bool is_const;
 
     union {
         const char* identifer;
-        expr_t*     pattern;
+        Expr*     pattern;
     };
 
-    type_t* type;
-    expr_t* rhs;
-} vardecl_t;
+    TypeInfo* type;
+    Expr* rhs;
+} VarDeclStmt;
 
 typedef struct item_funcdef {
     bool is_extern;
     bool is_decl;
     
-    span_t name_span;
+    Span name_span;
     const char* name;
     const char* linkage_name;
     
-    juve_vec_t*   params; // vector of param_t*
-    expr_t*     body;
-    type_t*     return_type;
-} funcdef_t;
+    JVec*   params; // vector of param_t*
+    Expr*     body;
+    TypeInfo*     return_type;
+} FunctionDef;
 
 typedef struct expr_block {
-    cjvec_t* statements;
-} block_t;
+    CJVec* statements;
+} BlockExpr;
 
 struct expr_ {
     expr_kind_t kind;
-    span_t span;
+    Span span;
     union {
 	    struct expr_literal literal;
 	    struct expr_block   block;
@@ -62,7 +63,7 @@ struct expr_ {
 
 struct stmt_ {
     stmt_kind_t kind;
-    span_t span;
+    Span span;
     union {
 	    struct stmt_vardecl vardecl;
 	    struct expr_ expr;
@@ -71,15 +72,15 @@ struct stmt_ {
 
 typedef struct {
     item_kind_t kind;
-    span_t span;
+    Span span;
     union {
 	    struct item_funcdef fndef;
     } data;
-} item_t;
+} Item;
 
-expr_t* expr_make_block(cjvec_t* stmts);
-expr_t* expr_make_literal_int(long value, span_t span);
-expr_t* expr_make_identifier(const char* name, span_t span);
-stmt_t* stmt_make_vardecl(vardecl_t vardecl, span_t);
+Expr* expr_make_block(CJVec* stmts);
+Expr* expr_make_literal_int(long value, Span span);
+Expr* expr_make_identifier(const char* name, Span span);
+Stmt* stmt_make_vardecl(VarDeclStmt vardecl, Span);
 
-item_t* item_make_fndef(funcdef_t fn, span_t span);
+Item* item_make_fndef(FunctionDef fn, Span span);

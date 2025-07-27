@@ -8,9 +8,9 @@
 typedef enum {
     sym_variable_k,
     sym_function_k,
-} symtype_t;
+} SymType;
 
-typedef struct symbol_info_s symbol_info_t;
+typedef struct symbol_info_s SymInfo;
 
-symbol_info_t* syminfo_new(const char* name, span_t decl, type_t* type, symtype_t kind);
-type_t* syminfo_get_type(symbol_info_t* sym);
+SymInfo* syminfo_new(const char* name, Span decl, TypeInfo* type, SymType kind);
+TypeInfo* syminfo_get_type(SymInfo* sym);

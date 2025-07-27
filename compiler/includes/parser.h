@@ -2,26 +2,27 @@
 #include <enum.h>
 #include <juve_utils.h>
 #include <compiler_opt.h>
+#include <compiler.h>
 
 typedef enum {
     parse_func_body_k,
     parse_vardecl_expr_k,
     
     parse_context_no_set
-} parse_context_t;
+} ParseContext;
 
 typedef struct {
-    cjvec_t* tokens; // from lexer
+    CJVec* tokens; // from lexer
     const char* source; // from lexer
 
-    cjvec_t* items;  // all top-level items
-    cjvec_t* errors;
+    CJVec* items;  // all top-level items
+    CJVec* errors;
 
-    parse_context_t current_context;
+    ParseContext current_context;
 
     size_t cursor;
-} parser_t;
+} Parser;
 
-parser_t* parser_new(compile_options_t* opts, cjvec_t* tokens, const char* source);
-bool parser_parse(parser_t* parser);
-void parser_free(parser_t* parser);
+Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source);
+bool parser_parse(Parser* parser);
+void parser_free(Parser* parser);

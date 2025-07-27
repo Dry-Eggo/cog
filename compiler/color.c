@@ -1,6 +1,6 @@
 #include <color.h>
 
-void cm_init(color_manager_t* cm) {
+void cm_init(ColorManager* cm) {
     cm->use_color = isatty(fileno(stderr));
 
     cm->colors[color_red_k] = "\x1b[31m";
@@ -10,7 +10,7 @@ void cm_init(color_manager_t* cm) {
 }
 
 
-const char* get_color(color_manager_t* cm, color_t c) {
+const char* get_color(ColorManager* cm, color_t c) {
     if (!cm->use_color) return "";
     return cm->colors[c];
 }

@@ -2,8 +2,8 @@
 #include <compiler.h>
 #include <defines.h>
 
-item_t* item_make_fndef(funcdef_t fn, span_t span) {
-    item_t* item = alloc(item_t);
+Item* item_make_fndef(FunctionDef fn, Span span) {
+    Item* item = alloc(Item);
 
     item->span = span;
     item->data.fndef = fn;
@@ -13,9 +13,9 @@ item_t* item_make_fndef(funcdef_t fn, span_t span) {
 }
 
 
-stmt_t* stmt_make_vardecl(vardecl_t vardecl, span_t span) {
+Stmt* stmt_make_vardecl(VarDeclStmt vardecl, Span span) {
     vardecl.span = span;
-    stmt_t* stmt = alloc(stmt_t);
+    Stmt* stmt = alloc(Stmt);
     stmt->kind = stmt_vardecl_k;     
     stmt->data.vardecl = vardecl;    
     stmt->span = span;

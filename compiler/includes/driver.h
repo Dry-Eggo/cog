@@ -13,23 +13,22 @@ typedef enum {
     phase_parser_k,
     phase_sema_k,
     phase_codegen_k
-} compile_phase_t;
+} CompilerPhase;
 
 
 typedef struct {
-    compile_options_t* options;
-    compile_phase_t    phase;
+    CompileOptions* options;
+    CompilerPhase    phase;
 
-    juve_vec_t*        source_lines;
+    JVec*        source_lines;
     const char*        source;
     
-    lexer_t*           lexer;
-    parser_t*          parser;
-    semantics_t*       sema;
-    c_context_t*       c_ctx;
-} driver_t;
+    Lexer*           lexer;
+    Parser*          parser;
+    Semantics*       sema;
+} Driver;
 
 
-driver_t* driver_new(const char* source, compile_options_t* opts);
+Driver* driver_new(const char* source, CompileOptions* opts);
 
-void kudo_compile(compile_options_t* opts);
+void kudo_compile(CompileOptions* opts);

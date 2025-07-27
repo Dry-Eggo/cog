@@ -8,8 +8,8 @@
 typedef struct {
     bool use_color;
     const char* colors[color_count_k];
-} color_manager_t;
+} ColorManager;
 
 
-void cm_init(color_manager_t* cm);
-const char* get_color(color_manager_t* cm, color_t c);
+void cm_init(ColorManager* cm);
+const char* get_color(ColorManager* cm, color_t c);

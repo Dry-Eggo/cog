@@ -5,10 +5,10 @@
 
 typedef struct {
     const char* name;
-    type_t*     type;
-} param_info_t;
+    TypeInfo*     type;
+} ParamInfo;
 
-typedef struct function_info_s function_info_t;
+typedef struct function_info_s FunctionInfo;
 
-param_info_t* param_info_new(const char* name, type_t* type);
-function_info_t* func_info_new(const char* name, const char* linkage_name, const char* mangled_name, juve_vec_t* param_info, type_t* type);
+ParamInfo* param_info_new(const char* name, TypeInfo* type);
+FunctionInfo* func_info_new(const char* name, const char* linkage_name, const char* mangled_name, JVec* param_info, TypeInfo* type);

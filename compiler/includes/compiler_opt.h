@@ -6,4 +6,4 @@ typedef struct  {
     char* output_file;
     char* input_file;
     char* program_name;
-} compile_options_t;
+} CompileOptions;

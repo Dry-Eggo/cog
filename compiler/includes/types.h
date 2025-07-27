@@ -9,11 +9,11 @@ typedef enum {
     type_bool_k,
     type_nil_k,
     type_count_k,
-} type_kind_t;
+} TypeKind;
 
-typedef struct type_s type_t;
+typedef struct type_s TypeInfo;
 
-type_t* type_new(type_kind_t kind, const char* name, const char* repr);
-type_kind_t type_get_kind(type_t* t);
-const char* type_get_name(type_t* t);
-const char* type_get_repr(type_t* t);
+TypeInfo* type_new(TypeKind kind, const char* name, const char* repr);
+TypeKind type_get_kind(TypeInfo* t);
+const char* type_get_name(TypeInfo* t);
+const char* type_get_repr(TypeInfo* t);

@@ -5,8 +5,8 @@
 #include <string.h>
 #include <ctype.h>
 
-lexer_t* lexer_new(compile_options_t* opts, const char* source) {
-    lexer_t* lexer = jarena_alloc(global_arena, sizeof(lexer_t));
+Lexer* lexer_new(CompileOptions* opts, const char* source) {
+    Lexer* lexer = jarena_alloc(global_arena, sizeof(Lexer));
 
     lexer->source_path = opts->input_file;
     lexer->source = source;
@@ -21,21 +21,21 @@ lexer_t* lexer_new(compile_options_t* opts, const char* source) {
     return lexer;
 }
 
-void lexer_free(lexer_t* lexer) {
+void lexer_free(Lexer* lexer) {
     if (lexer) {
 	    // doesn't free the tokens because they are allocated on the arena
 	    cjvec_free(lexer->tokens);
     }
 }
 
-char lexer_now(lexer_t* lexer) {
+char lexer_now(Lexer* lexer) {
     if (lexer->cursor < lexer->source_size) {
 	    return lexer->source[lexer->cursor];
     }
     return EOF;
 }
 
-char lexer_advance(lexer_t* lexer) {
+char lexer_advance(Lexer* lexer) {
     char ch = lexer_now(lexer);
     if (ch == '\n') {
 	    lexer->line++;
@@ -45,7 +45,7 @@ char lexer_advance(lexer_t* lexer) {
     return ch;
 }
 
-token_t* lexer_parse_name(lexer_t* lexer) {
+Token* lexer_parse_name(Lexer* lexer) {
     juve_buffer_t* buffer = jb_create();
     size_t sl = lexer->line;
     size_t sc = lexer->column;
@@ -76,13 +76,13 @@ token_t* lexer_parse_name(lexer_t* lexer) {
     } else {
 	    text = jb_str_a(buffer, global_arena);
     }
-    span_t* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
-    token_t* tok = token_new(span, kind, jarena_strdup(global_arena, (char*)text));
+    Span* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
+    Token* tok = token_new(span, kind, jarena_strdup(global_arena, (char*)text));
     jb_free(buffer);
     return tok;
 }
 
-bool lexer_lex(lexer_t* lexer) {
+bool lexer_lex(Lexer* lexer) {
     bool ok = true;
     while (lexer_now(lexer) != EOF) {
 	    if (isspace(lexer_now(lexer))) {
@@ -91,7 +91,7 @@ bool lexer_lex(lexer_t* lexer) {
 	    }
 
 	    if (isalpha(lexer_now(lexer)) || lexer_now(lexer) == '_') {
-	        token_t* tok = lexer_parse_name(lexer);
+	        Token* tok = lexer_parse_name(lexer);
 	        cjvec_push(lexer->tokens, (void*)tok);
 	        continue;
 	    }
@@ -107,8 +107,8 @@ bool lexer_lex(lexer_t* lexer) {
             }
 
             const char* text = jb_str_a(buffer, global_arena);
-            span_t* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
-            token_t* tok = token_new(span, kind, jarena_strdup(global_arena, (char*)text));
+            Span* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
+            Token* tok = token_new(span, kind, jarena_strdup(global_arena, (char*)text));
             cjvec_push(lexer->tokens, (void*)tok);
             jb_free(buffer);
             continue;
@@ -121,11 +121,11 @@ bool lexer_lex(lexer_t* lexer) {
             lexer_advance(lexer);
             if (lexer_now(lexer) == '=') {
                 lexer_advance(lexer);
-                token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_coleq_k, ":=");
+                Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_coleq_k, ":=");
 	            cjvec_push(lexer->tokens, (void*)tok);
                 continue;
             }
-            token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_colon_k, ":");
+            Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_colon_k, ":");
 	        cjvec_push(lexer->tokens, (void*)tok);
             continue;
         } break;
@@ -133,7 +133,7 @@ bool lexer_lex(lexer_t* lexer) {
             lexer_advance(lexer);
             if (lexer_now(lexer) == '>') {
                 lexer_advance(lexer);
-                token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_slim_arrow_k, "->");
+                Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_slim_arrow_k, "->");
 	            cjvec_push(lexer->tokens, (void*)tok);
                 continue;
             }
@@ -142,32 +142,32 @@ bool lexer_lex(lexer_t* lexer) {
         } break;
         case ';': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_semi_k, ";");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_semi_k, ";");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
         case '=': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_eq_k, "=");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_eq_k, "=");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
 	    case '(': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_oparen_k, "(");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_oparen_k, "(");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
 	    case ')': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cparen_k, ")");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cparen_k, ")");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
 	    case '{': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_obrace_k, "{");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_obrace_k, "{");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
 	    case '}': {
 	        lexer_advance(lexer);
-	        token_t* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cbrace_k, "}");
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cbrace_k, "}");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
 	    default:
@@ -178,7 +178,7 @@ bool lexer_lex(lexer_t* lexer) {
 	    }
     }
     
-    token_t* tok = token_new(span_new(lexer->line, lexer->column, lexer->column, lexer->source_path), token_eof_k, "<eof>");
+    Token* tok = token_new(span_new(lexer->line, lexer->column, lexer->column, lexer->source_path), token_eof_k, "<eof>");
     cjvec_push(lexer->tokens, (void*)tok);
     return ok;
 }
