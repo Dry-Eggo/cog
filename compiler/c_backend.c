@@ -59,6 +59,7 @@ struct CIntType {
 };
 
 struct CBlock {
+    CBlock* parent;
     CJVec* statements;    
 };
 
@@ -67,6 +68,7 @@ struct CContext {
     JBuffer* header;   // foward_decl    
     JBuffer* body;     // main code
 
+    bool     output_built;
     JBuffer* final_output;
     
     CBlock*  current_block;
@@ -84,7 +86,8 @@ struct CFunction {
     CJVec*      params;
 
     CExpr*      return_value;
-    CBlock*     block;
+    
+    CBlock*     block;    
     bool        has_definition;
 };
 
@@ -105,7 +108,9 @@ CContext* cctx_new(JArena* arena) {
     ctx->body     = jb_create();
 
     ctx->items = cjvec_new(global_arena);
-
+    
+    ctx->output_built = false;    
+    
     ctx->arena = arena;
     ctx->tab_tracker = jtab_new(arena);
     return ctx;
@@ -119,10 +124,20 @@ CItem* cctx_make_item(CContext* cctx, CItemKind kind, void* data) {
 }
 
 
-CBlock* cctx_new_block(CContext* cctx) {
+CBlock* cctx_new_block(CContext* cctx, CBlock* parent) {
     CBlock* block = CCTX_ALLOC(cctx, CBlock);
     block->statements = cjvec_new(cctx->arena);
+    block->parent = parent;
     return block;
+}
+
+void cctx_end_block(CContext* cctx) {
+    CBlock* prev_block = cctx->current_block;
+    if (prev_block->parent) {
+        cctx->current_block = prev_block->parent;
+    } else {
+        cctx->current_block = NULL;
+    }
 }
 
 CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CJVec* sattr, CType* type, bool has_definition) {
@@ -135,7 +150,9 @@ CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params,
     func->has_definition = has_definition;
 
     if (func->has_definition) {
-        func->block = cctx_new_block(cctx);
+        // if we are making a function, this means that we are currently in the global
+        // scope hence no parent block
+        func->block = cctx_new_block(cctx, NULL);
         cctx->current_block = func->block;
     } else {
         func->block = NULL;
@@ -173,7 +190,8 @@ CExpr* cctx_create_value_identifer(CContext* cctx, const char* identifier) {
 }
 
 void cctx_add_stmt(CContext* cctx, CStmt* stmt) {
-    cjvec_push(cctx->current_block->statements, (void*)stmt);
+    if (cctx->current_block) cjvec_push(cctx->current_block->statements, (void*)stmt);
+    else unreachable;
 }
 
 void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* expr) {
@@ -265,14 +283,27 @@ void cctx_walk_items(CContext* cctx) {
 
 
 JBuffer* cctx_get_output(CContext* cctx) {
-    cctx->final_output = jb_create();
-    cctx_walk_items(cctx);
-
-    const char* includes = jb_str_a(cctx->includes, cctx->arena);
-    const char* header   = jb_str_a(cctx->header, cctx->arena);
-    const char* body     = jb_str_a(cctx->body, cctx->arena);
-
-    jb_appendf_a(cctx->final_output, cctx->arena, "%s\n%s\n%s\n", includes, header, body);
+    if (!cctx->output_built) {
+        cctx->final_output = jb_create();
+        cctx_walk_items(cctx);
+        
+        const char* includes = jb_len(cctx->includes) == 0 ? NULL : jb_str_a(cctx->includes, cctx->arena);
+        const char* header   = jb_len(cctx->header)   == 0 ? NULL : jb_str_a(cctx->header, cctx->arena);
+        const char* body     = jb_len(cctx->body)     == 0 ? NULL : jb_str_a(cctx->body, cctx->arena);
+        
+        if (includes) jb_appendf_a(cctx->final_output, cctx->arena, "%s\n", includes);
+        if (header) jb_appendf_a(cctx->final_output, cctx->arena, "%s\n", header);
+        if (body) jb_appendf_a(cctx->final_output, cctx->arena, "%s", body);
+        cctx->output_built = true;
+    }    
     
-    return cctx->final_output;
+    return cctx->final_output;        
+}
+
+void cctx_free(CContext* cctx) {
+    jb_free(cctx->includes);
+    jb_free(cctx->header);
+    jb_free(cctx->body);
+    
+    if (cctx->output_built) jb_free(cctx->final_output);
 }

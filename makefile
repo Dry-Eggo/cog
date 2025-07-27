@@ -39,6 +39,7 @@ clean:
 tests/out/%.test: tests/%.kd
 	@mkdir -p tests/out
 	$(TARGET) --test -i $< > $@ 2>&1
+	@valgrind --leak-check=full --log-file=$@.valgrind $(TARGET) --test $< $@
 
 test: $(TESTOUTPUTS)
 	@echo "Tested: " $(TESTOUTPUTS)

@@ -3,7 +3,7 @@
 #include <token.h>
 #include <stddef.h>
 #include <enum.h>
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 
 typedef struct {
     size_t line;

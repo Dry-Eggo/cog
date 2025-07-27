@@ -86,6 +86,7 @@ void sema_free(Semantics* sema) {
         jmap_free(sema->functions);
         jmap_free(sema->symbols);
         jb_free(sema->tmp_out);
+        cctx_free(sema->cctx);
     }
 }
 

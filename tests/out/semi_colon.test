@@ -4,5 +4,5 @@ Kudo: Syntax Error: (3:6): Unqualified token
      2 |     let age := 20
      3 |     let age2 := 40;
        |     ^~~             : did you forget a ';'
-Kudo: 1 parsing errors occured
+Kudo: 1 parsing errors occurred
 Kudo: compilation aborted

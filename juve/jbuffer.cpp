@@ -1,4 +1,4 @@
-#include <juve_utils.h>
+#include "juve_utils.h"
 #include <sstream>
 #include <string>
 #include <cstdlib>
@@ -43,6 +43,11 @@ void jb_appendf_a(juve_buffer_t* jb, juve_arena_t* arena, const char* fmt, ...) 
 bool jb_eq(juve_buffer_t* jb, const char* str) {
     std::string s = jb->buffer.str();
     return (s == str);
+}
+
+size_t jb_len(juve_buffer_t* jb) {
+    if (!jb) return -1;    
+    return jb->buffer.str().size();
 }
 
 char* jb_str(juve_buffer* jb) {

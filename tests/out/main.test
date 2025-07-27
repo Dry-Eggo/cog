@@ -1,8 +1,5 @@
-
-
 int main()
 {
     int age = 50;
     int age2 = age;
 } // main
-

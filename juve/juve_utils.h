@@ -31,6 +31,7 @@ char* jb_str_a(juve_buffer_t* jb, juve_arena_t* arena);
 void jb_free(juve_buffer_t*);
 void jb_clear(juve_buffer_t*);
 bool jb_eq(juve_buffer_t*, const char*);
+size_t jb_len(juve_buffer_t*);
 
 // file utils
 size_t jb_read_entire_file(const char*, juve_buffer_t*);

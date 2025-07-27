@@ -1,7 +1,7 @@
 #pragma once
 
 #include <token.h>
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 #include <compiler_opt.h>
 #include <compiler.h>
 

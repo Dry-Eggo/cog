@@ -63,7 +63,7 @@ void kudo_compile(CompileOptions* compile_options) {
     driver->parser = parser_new(compile_options, driver->lexer->tokens, driver->lexer->source);
     if (!parser_parse(driver->parser)) {
 	    syntax_error_flush(driver->parser->errors, driver->source_lines);
-	    fprintf(stderr, "Kudo: %ld parsing errors occured\n", cjvec_len(driver->parser->errors));
+	    fprintf(stderr, "Kudo: %ld parsing errors occurred\n", cjvec_len(driver->parser->errors));
 	    jb_free(buffer);
 	    abort_compilation(driver);
     }
@@ -72,6 +72,7 @@ void kudo_compile(CompileOptions* compile_options) {
     driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
     if (!sema_check(driver->sema)) {
         sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
+        jb_free(buffer);
         abort_compilation(driver);
     }
     
