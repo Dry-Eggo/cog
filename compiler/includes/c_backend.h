@@ -5,5 +5,6 @@
 typedef struct c_context_s c_context_t;
 
 c_context_t* c_ctx_new(cjvec_t* program, compile_options_t* opts);
+juve_buffer_t* c_ctx_get_output(c_context_t* ctx);
 bool c_ctx_emit(c_context_t* ctx);
 void c_ctx_free(c_context_t* ctx);

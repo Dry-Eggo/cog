@@ -42,6 +42,8 @@ void emit_body(c_context_t* ctx, block_t block) {
     }
 }
 
+juve_buffer_t* c_ctx_get_output(c_context_t* ctx) { return ctx->output; }
+
 void emit_vardecl(c_context_t* ctx, vardecl_t vardecl) {
     const char* name = vardecl.identifer;
     append_out(ctx, "\n    int %s = ");
