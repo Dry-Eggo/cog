@@ -34,11 +34,19 @@ void append_out(c_context_t* ctx, const char* fmt, ...) {
 
 void emit_stmt(c_context_t* ctx, stmt_t* stmt);
 void emit_vardecl(c_context_t* ctx, vardecl_t vardecl);
+void emit_expr(c_context_t* ctx, expr_t* expr);
 
 void emit_body(c_context_t* ctx, block_t block) {
     fori(stmt_t*, stmt, i, block.statements) {
         emit_stmt(ctx, stmt);
     }
+}
+
+void emit_vardecl(c_context_t* ctx, vardecl_t vardecl) {
+    const char* name = vardecl.identifer;
+    append_out(ctx, "\n    int %s = ");
+    emit_expr(ctx, vardecl.rhs);
+    append_out(ctx, ";");
 }
 
 void emit_stmt(c_context_t* ctx, stmt_t* stmt) {
@@ -50,6 +58,8 @@ void emit_stmt(c_context_t* ctx, stmt_t* stmt) {
 void emit_expr(c_context_t* ctx, expr_t* expr) {
     if (expr->kind == expr_compound_stmt_k) {
         emit_body(ctx, expr->data.block);
+    } else if (expr->kind == expr_int_k) {
+        append_out(ctx, "%ld", expr->data.literal.lit.int_value);
     }
     todo("");
 }
