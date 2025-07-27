@@ -1,0 +1,5 @@
+int main ()
+{
+	int age = 40;
+	int age2 = age;
+}

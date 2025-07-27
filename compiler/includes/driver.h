@@ -2,6 +2,7 @@
 
 #include <compiler.h>
 #include <compiler_opt.h>
+#include <c_backend.h>
 #include <color.h>
 #include <lexer.h>
 #include <parser.h>
@@ -11,6 +12,7 @@ typedef enum {
     phase_lexer_k,
     phase_parser_k,
     phase_sema_k,
+    phase_codegen_k
 } compile_phase_t;
 
 
@@ -24,6 +26,7 @@ typedef struct {
     lexer_t*           lexer;
     parser_t*          parser;
     semantics_t*       sema;
+    c_context_t*       c_ctx;
 } driver_t;
 
 

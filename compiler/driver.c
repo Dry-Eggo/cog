@@ -75,6 +75,12 @@ void kudo_compile(compile_options_t* compile_options) {
         abort_compilation(driver);
     }
 
+    driver->phase = phase_codegen_k;
+    driver->c_ctx = c_ctx_new(driver->parser->items, compile_options);
+    if (!c_ctx_emit(driver->c_ctx)) {
+        
+    }
+    
     jb_print(sema_get_tmp(driver->sema));    
     jb_free(buffer);
     driver_free(driver);
