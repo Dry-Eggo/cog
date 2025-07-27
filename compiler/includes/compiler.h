@@ -1,5 +1,5 @@
 #pragma once
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 #include <color.h>
 
 typedef cjvec_t CJVec;

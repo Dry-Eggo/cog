@@ -9,7 +9,7 @@ CJUVE_SRC := $(wildcard juve/*.c)
 CJUVE_OBJ := $(patsubst juve/%.c, $(BINDIR)/%.o, $(CJUVE_SRC))
 CPPOBJ:= $(patsubst juve/%.cpp, $(BINDIR)/%.o, $(CPPSRC))
 OBJ:= $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.o, $(SRC))
-FLAGS:= -I$(INCDIR) -I./juve
+FLAGS:= -I$(INCDIR) -I.
 
 TESTFILES := $(wildcard tests/*.kd)
 TESTOUTPUTS := $(patsubst tests/%.kd, tests/out/%.test, $(TESTFILES))

@@ -1,5 +1,8 @@
-int main ()
+
+
+int main()
 {
-	int age = 40;
-	int age2 = age;
-}
+    int age = 50;
+    int age2 = age;
+} // main
+
