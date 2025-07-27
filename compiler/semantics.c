@@ -165,9 +165,9 @@ void check_function(Semantics* sema, Item* item) {
         final_ty = get_type_info(sema, "int");
     }
 
-    CType* functype = sema_convert_type(sema, final_ty);
-    
+    CType* functype = sema_convert_type(sema, final_ty);    
     CFunction* func =  cctx_create_function(sema->ccontext, funcdef.name, NULL, NULL, functype);
+    
     stream_out(sema, "%s %s ()\n", type_get_repr(final_ty), funcdef.name);
     if (funcdef.is_decl) stream_out(sema, ";");
     else {
@@ -180,7 +180,7 @@ void check_function(Semantics* sema, Item* item) {
         }
         stream_out(sema, "\n}\n");
     }
-    cctx_end_function(sema->ccontext, func, NULL);
+    // cctx_end_function(sema->ccontext, func, NULL);
 }
 
 stmt_result_t check_stmt(Semantics* sema, Stmt* stmt) {
