@@ -272,8 +272,13 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
     }
     case CExprIdentifier:
         return expr->string_expr;
-    case CExprString:
-        return expr->string_expr;
+    case CExprString: {
+        JBuffer* jb = jb_create();
+        jb_appendf_a(jb, cctx->arena, "\"%s\"", expr->string_expr);
+        const char* string = jb_str_a(jb, cctx->arena);
+        jb_free(jb);
+        return string;
+    }
     case CExprBinaryOp: {
         JBuffer* jb = jb_create();
 

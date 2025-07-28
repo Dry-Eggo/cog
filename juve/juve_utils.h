@@ -21,6 +21,12 @@ extern "C" {
 // Uses std::stringstream under the hood
 typedef struct JBuffer JBuffer;
 
+
+// JArena: A basic allocation tracker.
+// stores allocations in one place ready to be torn down in one go
+// Uses std::vector<void*>
+typedef struct JArena JArena;
+
 JBuffer*    jb_create(void);
 void        jb_append(JBuffer*, const char*);
 void        jb_appendf_a(JBuffer*, JArena*, const char* fmt, ...);
@@ -31,11 +37,6 @@ void        jb_free(JBuffer*);
 void        jb_clear(JBuffer*);
 bool        jb_eq(JBuffer*, const char*);
 size_t      jb_len(JBuffer*);
-
-// JArena: A basic allocation tracker.
-// stores allocations in one place ready to be torn down in one go
-// Uses std::vector<void*>
-typedef struct JArena JArena;
 
 void*    jmalloc(size_t);
 void     jfree(void*);
