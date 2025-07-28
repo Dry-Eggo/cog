@@ -1,15 +1,15 @@
-==13532== Memcheck, a memory error detector
-==13532== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
-==13532== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
-==13532== Command: bin/kudoc --test tests/undeclared_var.kd tests/out/undeclared_var.test
-==13532== Parent PID: 13511
-==13532== 
-==13532== 
-==13532== HEAP SUMMARY:
-==13532==     in use at exit: 0 bytes in 0 blocks
-==13532==   total heap usage: 175 allocs, 175 frees, 109,584 bytes allocated
-==13532== 
-==13532== All heap blocks were freed -- no leaks are possible
-==13532== 
-==13532== For lists of detected and suppressed errors, rerun with: -s
-==13532== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==20414== Memcheck, a memory error detector
+==20414== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==20414== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
+==20414== Command: bin/kudoc --test tests/undeclared_var.kd tests/out/undeclared_var.test
+==20414== Parent PID: 20393
+==20414== 
+==20414== 
+==20414== HEAP SUMMARY:
+==20414==     in use at exit: 0 bytes in 0 blocks
+==20414==   total heap usage: 175 allocs, 175 frees, 109,592 bytes allocated
+==20414== 
+==20414== All heap blocks were freed -- no leaks are possible
+==20414== 
+==20414== For lists of detected and suppressed errors, rerun with: -s
+==20414== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

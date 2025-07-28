@@ -30,7 +30,32 @@ Driver* driver_new(const char* source, CompileOptions* opts) {
 
 void driver_free(Driver* driver) {    
     jvec_free(driver->source_lines);
+    jb_free(driver->source_buffer);
     if (driver->phase >= phase_sema_k) sema_free(driver->sema);
+}
+
+void emit_file(CompileOptions* compile_options, JBuffer* compiled_file) {
+    const char* filestem = jfile_stem(compile_options->input_file, global_arena);
+    CJBuffer* tmp = cjb_create(global_arena);
+    
+    cjb_appendf(tmp, "%s.c", filestem);
+    const char* tmp_cfile = cjb_str(tmp);
+    cjb_clear(tmp);
+    
+    jfile_write(tmp_cfile, jb_str_a(compiled_file, global_arena));
+
+    CJCmd cmd = jcmd_init(global_arena, JCMD_LOG);
+    
+    if (!compile_options->output_file) {       
+        cjb_appendf(tmp, "%s.o", filestem);
+        compile_options->output_file = cjb_str(tmp);
+
+        cmd_append(&cmd, "clang", "-c -o", compile_options->output_file, tmp_cfile);
+        jcmd_one_shot(&cmd);
+    }  else {        
+        cmd_append(&cmd, "clang", "-c -o", compile_options->output_file, tmp_cfile);
+        jcmd_one_shot(&cmd);
+    }    
 }
 
 void kudo_compile(CompileOptions* compile_options) {
@@ -45,6 +70,7 @@ void kudo_compile(CompileOptions* compile_options) {
     const char* source = jb_str_a(buffer, global_arena);
     
     Driver* driver = driver_new(source, compile_options);
+    driver->source_buffer = buffer;
     
     driver->lexer = lexer_new(compile_options, source);
     lexer_lex(driver->lexer);
@@ -64,7 +90,6 @@ void kudo_compile(CompileOptions* compile_options) {
     if (!parser_parse(driver->parser)) {
 	    syntax_error_flush(driver->parser->errors, driver->source_lines);
 	    fprintf(stderr, "Kudo: %ld parsing errors occurred\n", cjvec_len(driver->parser->errors));
-	    jb_free(buffer);
 	    abort_compilation(driver);
     }
 
@@ -72,13 +97,13 @@ void kudo_compile(CompileOptions* compile_options) {
     driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
     if (!sema_check(driver->sema)) {
         sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
-        jb_free(buffer);
         abort_compilation(driver);
     }
     
     driver->phase = phase_codegen_k;
-    jb_print(cctx_get_output(sema_get_cctx(driver->sema)));
+    JBuffer* compiled_file = cctx_get_output(sema_get_cctx(driver->sema));   
+
+    emit_file(compile_options, compiled_file);
     
-    jb_free(buffer);
     driver_free(driver);
 }

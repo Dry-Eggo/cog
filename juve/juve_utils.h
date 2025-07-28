@@ -85,6 +85,46 @@ void*       cjvec_at(CJVec*, size_t);
 void*       cjvec_back(CJVec*);
 void        cjvec_free(CJVec*);
 
+typedef struct CJBuffer CJBuffer;
+CJBuffer*   cjb_create(JArena* arena);
+CJBuffer*   cjb_from_str(JArena* arena, const char* cstr);
+size_t      cjb_append(CJBuffer*, const char*);
+size_t      cjb_appendf(CJBuffer*, const char* fmt, ...);
+void        cjb_print(CJBuffer*);
+char*       cjb_str(CJBuffer*);
+void        cjb_clear(CJBuffer*);
+bool        cjb_eq(CJBuffer*, const char*);
+size_t      cjb_len(CJBuffer*);
+
+typedef enum {
+    JCMD_LOG,
+    JCMD_NOT_SET,
+} JCmdOption;
+
+typedef struct CJCmd {
+    JCmdOption opt;
+    CJBuffer* buffer;
+} CJCmd;
+
+#define cmd_append(cmd, ...) \
+        cmd_append_many((cmd), \
+                 ((const char*[]) {__VA_ARGS__}), (sizeof((const char*[]) {__VA_ARGS__})/sizeof(const char*)))
+
+#define cmd_append_many(cmd, items, item_count) \
+       do {\
+           for (size_t i = 0; i < (item_count); ++i) {\
+              const char* atom = (items)[i];\
+              jcmd_append((cmd), atom);\
+           }\
+       } while (0)
+
+       
+CJCmd jcmd_init(JArena* arena, JCmdOption opt);
+bool jcmd_run(CJCmd cmd);
+bool jcmd_one_shot(CJCmd* cmd);
+void jcmd_reset(CJCmd* cmd);
+void jcmd_append(CJCmd* cmd, const char* atom);
+
 #ifdef __cplusplus
 }
 #endif

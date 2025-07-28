@@ -30,12 +30,7 @@ void cjvec_push(CJVec* vec, void* data) {
 
     if (vec->len >= vec->cap) {
         size_t newsz = vec->cap*2;
-        void** new_data = (void**)jarena_alloc(vec->arena, newsz);
-        
-        while (vec->len >= vec->cap) {
-            newsz = vec->cap*2;
-            new_data = (void**)jarena_alloc(vec->arena, newsz);
-        }
+        void** new_data = (void**)jarena_alloc(vec->arena, newsz);       
         
         memcpy(new_data, vec->data, vec->len);
         vec->data = new_data;

@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <stdlib.h>
 #include <driver.h>
 #include <cli/cli.h>
 
@@ -18,7 +18,7 @@ extern void print_usage(const char* program_name) {
 int main(int argc, char** argv) {
     global_arena = jarena_new();
     cm_init(&global_color_manager);
-
+    
     CompileOptions compile_options = {0};    
     parse_args(&compile_options, argc, argv);
 
