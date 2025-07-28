@@ -1,4 +1,4 @@
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-size_t jb_read_entire_file(const char* path, juve_buffer* jb) {
+size_t jb_read_entire_file(const char* path, JBuffer* jb) {
     std::fstream file(path);
 
     if (!file.is_open()) return -1;
@@ -29,14 +29,14 @@ bool jfile_write(const char* path, const char* content) {
     return true;
 }
 
-char*  jfile_stem(const char* path, juve_arena_t* arena) {
+char*  jfile_stem(const char* path, JArena* arena) {
     if (!path || !arena) return nullptr;
     
     fs::path fpath(path);
     return jarena_strdup(arena, (char*)fpath.stem().string().c_str());
 }
 
-char*  jfile_ext(const char* path, juve_arena_t* arena) {
+char*  jfile_ext(const char* path, JArena* arena) {
     if (!path || !arena) return nullptr;
     fs::path fpath(path);
     std::string ext = fpath.extension().string();
@@ -44,13 +44,13 @@ char*  jfile_ext(const char* path, juve_arena_t* arena) {
     return jarena_strdup(arena, (char*)ext.c_str());
 }
 
-char* jfile_dirname(const char* path, juve_arena_t* arena) {
+char* jfile_dirname(const char* path, JArena* arena) {
     if (!path || !arena) return nullptr;
     fs::path fpath(path);
     return jarena_strdup(arena, (char*)fpath.parent_path().string().c_str());
 }
 
-char* jfile_basename(const char* path, juve_arena_t* arena) {
+char* jfile_basename(const char* path, JArena* arena) {
     if (!path || !arena) return nullptr;
     fs::path fpath(path);
     return jarena_strdup(arena, (char*)fpath.filename().string().c_str());

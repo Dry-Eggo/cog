@@ -7,18 +7,20 @@ struct function_info_s {
     const char* linkage_name;
     const char* mangled_name;
 
-    juve_vec_t* param_info;
+    JVec* param_info;
     TypeInfo*     return_type;
 };
 
 ParamInfo* param_info_new(const char* name, TypeInfo* type) {
-    ParamInfo* pinfo = alloc(ParamInfo);
-    todo("param_info: new");
+    UNUSED(name);
+    UNUSED(type);
+    ParamInfo* pinfo = ALLOC(ParamInfo);
+    TODO("param_info: new");
     return pinfo;
 }
 
-FunctionInfo* func_info_new(const char* name, const char* linkage_name, const char* mangled_name, juve_vec_t* param_info, TypeInfo* type) {
-    FunctionInfo* finfo = alloc(FunctionInfo);
+FunctionInfo* func_info_new(const char* name, const char* linkage_name, const char* mangled_name, JVec* param_info, TypeInfo* type) {
+    FunctionInfo* finfo = ALLOC(FunctionInfo);
     finfo->name = name;
     finfo->linkage_name = linkage_name;
     finfo->mangled_name = mangled_name;

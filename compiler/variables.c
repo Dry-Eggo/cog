@@ -12,7 +12,7 @@ struct symbol_info_s {
 
 
 SymInfo* syminfo_new(const char* name, Span decl, TypeInfo* type, SymType kind) {
-    SymInfo* sym = alloc(SymInfo);
+    SymInfo* sym = ALLOC(SymInfo);
     sym->name = name;
     sym->declaration = decl;
     sym->type = type;

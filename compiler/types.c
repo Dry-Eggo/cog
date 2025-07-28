@@ -10,7 +10,7 @@ struct type_s {
 
 
 TypeInfo* type_new(TypeKind kind, const char* name, const char* repr) {
-    TypeInfo* type = alloc(TypeInfo);
+    TypeInfo* type = ALLOC(TypeInfo);
     type->kind = kind;
     type->name = name;
     type->repr = repr;

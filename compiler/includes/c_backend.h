@@ -16,6 +16,7 @@ typedef enum {
 
 typedef enum {
     CTypeInt,
+    CTypeString,
     CTypePointer,
     CTypeChar,
     CTypeDouble,
@@ -34,12 +35,14 @@ void       cctx_end_function(CContext* cctx, CFunction* func, CExpr* value);
 // int 
 CType*     cctx_create_type_int32(CContext* cctx, CIntSign sign, bool const_);
 // char*, const char*
-CType*     cctx_create_string_type(CContext* cctx, bool const_);
+CType*     cctx_create_type_string(CContext* cctx, bool const_);
 
 CExpr*    cctx_create_value_int(CContext* ctx, CType* type, int64_t value);
 CExpr*    cctx_create_value_string(CContext* ctx, CType* type, const char* value);
 CExpr*    cctx_create_value_char(CContext* ctx, CType* type, char value);
 CExpr*    cctx_create_value_identifer(CContext* cctx, const char* identifier);
+CExpr*    cctx_add_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
+CExpr*    cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
 
 void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* expr);
 

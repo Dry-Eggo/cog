@@ -4,27 +4,29 @@
 #include <cstdlib>
 #include <cstring>
 #include <stdarg.h>
-struct juve_buffer {
+
+
+struct JBuffer {
     std::stringstream buffer;
-    juve_buffer() {
+    JBuffer() {
     }
 };
 
-juve_buffer* jb_create() {
-    return new juve_buffer();
+JBuffer* jb_create() {
+    return new JBuffer();
 }
 
-void jb_print(juve_buffer* jb) {
+void jb_print(JBuffer* jb) {
     if (!jb) return;
     printf("%s", jb->buffer.str().c_str());
 }
 
-void jb_append(juve_buffer* jb, const char* str) {
+void jb_append(JBuffer* jb, const char* str) {
     if (!jb) return;
     jb->buffer << str;
 }
 
-void jb_appendf_a(juve_buffer_t* jb, juve_arena_t* arena, const char* fmt, ...) {
+void jb_appendf_a(JBuffer* jb, JArena* arena, const char* fmt, ...) {
 
     if (!jb || !fmt) return;
     va_list args;
@@ -40,17 +42,17 @@ void jb_appendf_a(juve_buffer_t* jb, juve_arena_t* arena, const char* fmt, ...) 
     jb->buffer << tmp;
 }
 
-bool jb_eq(juve_buffer_t* jb, const char* str) {
+bool jb_eq(JBuffer* jb, const char* str) {
     std::string s = jb->buffer.str();
     return (s == str);
 }
 
-size_t jb_len(juve_buffer_t* jb) {
+size_t jb_len(JBuffer* jb) {
     if (!jb) return -1;    
     return jb->buffer.str().size();
 }
 
-char* jb_str(juve_buffer* jb) {
+char* jb_str(JBuffer* jb) {
     if (!jb) return nullptr;
     std::string content = jb->buffer.str();
     char* res = static_cast<char*>(::operator new(content.size() + 1));
@@ -58,20 +60,20 @@ char* jb_str(juve_buffer* jb) {
     return res;
 }
 
-char* jb_str_a(juve_buffer_t* jb, juve_arena_t* arena) {
+char* jb_str_a(JBuffer* jb, JArena* arena) {
     if (!jb) return nullptr;
     
     std::string content = jb->buffer.str();
     return jarena_strdup(arena, (char*)content.data());
 }
 
-void jb_clear(juve_buffer* jb) {
+void jb_clear(JBuffer* jb) {
     if (!jb) return;
 
     jb->buffer.str("");
     jb->buffer.clear();
 }
 
-void jb_free(juve_buffer* jb) {
+void jb_free(JBuffer* jb) {
     delete jb;
 }

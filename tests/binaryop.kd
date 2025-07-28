@@ -1,0 +1,6 @@
+
+func main() {
+     let name := c"Dry";
+     let age : int = 50 + name;
+     let age2 := age;
+}

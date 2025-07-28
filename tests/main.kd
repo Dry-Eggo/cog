@@ -1,5 +1,4 @@
 
 func main() {
-     let age : int = 50;
-     let age2 := age;
+     let name := c"Dry";
 }

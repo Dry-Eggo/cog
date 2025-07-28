@@ -1,4 +1,6 @@
 #include <color.h>
+#include <unistd.h>
+#include <stdio.h>
 
 void cm_init(ColorManager* cm) {
     cm->use_color = isatty(fileno(stderr));

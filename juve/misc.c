@@ -1,6 +1,6 @@
 #include "misc.h"
 
-jtab_tracker_t jtab_new(juve_arena_t* arena) {
+jtab_tracker_t jtab_new(JArena* arena) {
     return (jtab_tracker_t) { 0, arena };
 }
 
@@ -12,7 +12,7 @@ const char* jtab_to_str(jtab_tracker_t* tracker) {
 
     size_t indent_level = (tracker->indent * 4);
     char* repr = jarena_alloc(tracker->arena, indent_level + 1);
-    int len = 0;
+    size_t len = 0;
     for (; len < indent_level; ++len) {
         repr[len] = ' ';
     }

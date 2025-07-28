@@ -35,11 +35,11 @@ void driver_free(Driver* driver) {
 
 void kudo_compile(CompileOptions* compile_options) {
     if (!jfile_exists(compile_options->input_file)) {
-	    log_err("Unable to open file: '%s': file not found\n", compile_options->input_file);
+	    LOG_ERR("Unable to open file: '%s': file not found\n", compile_options->input_file);
         abort_compilation(NULL);
     }
     
-    juve_buffer_t* buffer = jb_create();
+    JBuffer* buffer = jb_create();
     jb_read_entire_file(compile_options->input_file, buffer);
 
     const char* source = jb_str_a(buffer, global_arena);

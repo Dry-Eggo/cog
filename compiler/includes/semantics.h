@@ -9,5 +9,5 @@ Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, 
 CJVec* sema_get_diagnostics(Semantics* sema);
 void sema_free(Semantics* sema);
 bool sema_check(Semantics*);
-juve_buffer_t* sema_get_tmp(Semantics* sema);
+JBuffer* sema_get_tmp(Semantics* sema);
 CContext* sema_get_cctx(Semantics* sema);

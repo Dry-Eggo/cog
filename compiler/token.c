@@ -10,9 +10,12 @@ Span* span_new(size_t line, size_t col, size_t off, const char* filename) {
     return span;
 }
 
-Span span_merge(Span* start, Span* end) {
-    start->offset = end->offset;
-    return *start;
+Span span_merge(Span* start, Span* end) {   
+    return (Span) {
+        .line = start->line,
+        .column = start->line,
+        .offset = end->offset,
+    };
 }
 
 Token* token_new(Span* span, token_kind_t kind, const char* text) {

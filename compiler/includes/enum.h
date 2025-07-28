@@ -30,6 +30,12 @@ typedef enum {
     token_comma_k,      // ,
     token_coleq_k,      // :=
     token_eq_k,
+
+    // operators
+    token_add_k,
+    token_sub_k,
+    token_mul_k,
+    token_div_k,
     
     token_eof_k,
 } token_kind_t;

@@ -22,6 +22,7 @@ typedef enum {
     CExprString,
     CExprChar,
     CExprIdentifier,
+    CExprBinaryOp,
 } CExprKind;
 
 typedef enum {
@@ -29,6 +30,11 @@ typedef enum {
     CStmtAssignVar,
     CStmtDeclareVar,
 } CStmtKind;
+
+typedef enum {
+    CBinaryAdd,
+    CBinarySub,
+} CBinaryOp;
 
 struct CStmt {
     CStmtKind kind;
@@ -46,6 +52,7 @@ struct CExpr {
         const char* string_expr;
         char char_expr;
         bool bool_expr;
+        struct { CExpr* lhs; CExpr* rhs; CBinaryOp op; } binop;
     };
 };
 
@@ -102,7 +109,7 @@ struct CType {
 
 
 CContext* cctx_new(JArena* arena) {
-    CContext* ctx = alloc(CContext);
+    CContext* ctx = ALLOC(CContext);
     ctx->includes = jb_create();
     ctx->header   = jb_create();
     ctx->body     = jb_create();
@@ -163,6 +170,7 @@ CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params,
 }
 
 void cctx_end_function(CContext* cctx, CFunction* func, CExpr* value) {
+    UNUSED(cctx);
     func->return_value = value;
 }
 
@@ -174,11 +182,26 @@ CType* cctx_create_type_int32(CContext* cctx, CIntSign sign, bool const_) {
     return ty;
 }
 
+CType* cctx_create_type_string(CContext* cctx, bool const_) {
+    CType* ty = CCTX_ALLOC(cctx, CType);
+    ty->kind = CTypeString;
+    ty->const_ = const_;
+    return ty;    
+}
+
 CExpr* cctx_create_value_int(CContext* cctx, CType* type, int64_t value) {
     CExpr* expr = CCTX_ALLOC(cctx, CExpr);
     expr->type = type;
     expr->kind = CExprInt;
     expr->int_expr = value;
+    return expr;
+}
+
+CExpr* cctx_create_value_string(CContext* cctx, CType* type, const char* value) {
+    CExpr* expr = CCTX_ALLOC(cctx, CExpr);
+    expr->type = type;
+    expr->kind = CExprString;
+    expr->string_expr = value;
     return expr;
 }
 
@@ -189,9 +212,27 @@ CExpr* cctx_create_value_identifer(CContext* cctx, const char* identifier) {
     return expr;
 }
 
+CExpr* cctx_add_expr(CContext* cctx, CExpr* lhs, CExpr* rhs) {
+    CExpr* expr = CCTX_ALLOC(cctx, CExpr);
+    expr->kind  = CExprBinaryOp;
+    expr->binop.lhs = lhs;
+    expr->binop.rhs = rhs;
+    expr->binop.op = CBinaryAdd;
+    return expr;
+}
+
+CExpr* cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs) {
+    CExpr* expr = CCTX_ALLOC(cctx, CExpr);
+    expr->kind  = CExprBinaryOp;
+    expr->binop.lhs = lhs;
+    expr->binop.rhs = rhs;
+    expr->binop.op = CBinarySub;
+    return expr;
+}
+
 void cctx_add_stmt(CContext* cctx, CStmt* stmt) {
     if (cctx->current_block) cjvec_push(cctx->current_block->statements, (void*)stmt);
-    else unreachable;
+    else UNREACHABLE;
 }
 
 void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* expr) {
@@ -213,6 +254,9 @@ const char* cctx_type_to_str(CContext* cctx, CType* type) {
         } else {
             jb_appendf_a(tmp, cctx->arena, "int");
         }
+    } else if (type->kind == CTypeString) {
+        if (type->const_) jb_appendf_a(tmp, cctx->arena,"const ");
+        jb_appendf_a(tmp, cctx->arena, "char*");
     }
     const char* type_str = jb_str_a(tmp, cctx->arena);
     jb_free(tmp);
@@ -228,8 +272,24 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
     }
     case CExprIdentifier:
         return expr->string_expr;
+    case CExprString:
+        return expr->string_expr;
+    case CExprBinaryOp: {
+        JBuffer* jb = jb_create();
+
+        switch(expr->binop.op) {
+        case CBinaryAdd: jb_appendf_a(jb, cctx->arena, "%s + %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinarySub: jb_appendf_a(jb, cctx->arena, "%s - %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        default:
+            TODO("implement all operators");
+        }
+        
+        const char* result = jb_str_a(jb, cctx->arena);
+        jb_free(jb);
+        return result;
+    }        
     default:
-        todo("implement other cexprs");
+        TODO("implement other cexprs");
     }
     return NULL;
 }
@@ -245,7 +305,7 @@ void cctx_walk_stmt(CContext* cctx, CStmt* stmt) {
 
 void cctx_walk_block(CContext* cctx, CBlock* block) {
     jtab_add_level(&cctx->tab_tracker);
-    fori(CStmt*, stmt, i, block->statements) {
+    FOREACH(CStmt*, stmt, i, block->statements) {
         cctx_walk_stmt(cctx, stmt);
     }
     jtab_sub_level(&cctx->tab_tracker);
@@ -257,7 +317,7 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
 
     jb_appendf_a(cctx->body, cctx->arena, "%s %s()", type_str, name);
     if (func->return_value) {
-        todo("implement return values");
+        TODO("implement return values");
     }
 
     if (func->has_definition) {
@@ -274,7 +334,7 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
 }
 
 void cctx_walk_items(CContext* cctx) {
-    fori(CItem*, item, i, cctx->items) {
+    FOREACH(CItem*, item, i, cctx->items) {
         if (item->kind == CItemFunction) {
             cctx_walk_function(cctx, (CFunction*)item->data);
         }

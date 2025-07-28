@@ -1,4 +1,4 @@
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 #include <vector>
 #include <cstring>
 
@@ -10,16 +10,16 @@ void jfree(void* ptr) {
     ::operator delete(ptr);
 }
 
-struct juve_arena {
+struct JArena {
     std::vector<void*> allocations;
-    juve_arena() {}
+    JArena() {}
 };
 
-juve_arena_t* jarena_new() {
-    return new juve_arena();
+JArena* jarena_new() {
+    return new JArena();
 }
 
-void* jarena_alloc(juve_arena_t* arena, size_t n) {
+void* jarena_alloc(JArena* arena, size_t n) {
     if (!arena) return nullptr;
     void* mem = jmalloc(n);
     if (mem) {
@@ -29,7 +29,7 @@ void* jarena_alloc(juve_arena_t* arena, size_t n) {
     return nullptr;
 }
 
-void* jarena_zeroed(juve_arena_t* arena, size_t n) {
+void* jarena_zeroed(JArena* arena, size_t n) {
     if (!arena) return nullptr;
     void* mem = jmalloc(n);
     if (mem) {
@@ -40,7 +40,7 @@ void* jarena_zeroed(juve_arena_t* arena, size_t n) {
     return nullptr;    
 }
 
-char* jarena_strdup(juve_arena_t* arena, char* str) {
+char* jarena_strdup(JArena* arena, char* str) {
     if (!arena || !str) return nullptr;
     size_t str_len = strlen(str) + 1;
     char* new_str = (char*)jarena_alloc(arena, str_len);
@@ -48,13 +48,13 @@ char* jarena_strdup(juve_arena_t* arena, char* str) {
     return new_str;
 }
 
-void jarena_reset(juve_arena_t* arena) {
+void jarena_reset(JArena* arena) {
     if (!arena) return;
     for (void* mem: arena->allocations) jfree(mem);
     arena->allocations.clear();
 }
 
-void jarena_free(juve_arena_t* arena) {
+void jarena_free(JArena* arena) {
     if (!arena) return;
     for (void* mem: arena->allocations) jfree(mem);
     delete arena;

@@ -1,17 +1,17 @@
-#include <juve_utils.h>
+#include <juve/juve_utils.h>
 #include <string.h>
 
 #define CJVEC_INIT 255
 
-struct cjvec_t {
+struct CJVec {
     void** data;
     size_t cap;
     size_t len;
-    juve_arena_t* arena;
+    JArena* arena;
 };
 
-cjvec_t* cjvec_new(juve_arena_t* arena) {
-    cjvec_t* vec = (cjvec_t*)jarena_alloc(arena, sizeof(cjvec_t));
+CJVec* cjvec_new(JArena* arena) {
+    CJVec* vec = (CJVec*)jarena_alloc(arena, sizeof(CJVec));
     if (!vec) return NULL;
     
     vec->cap = CJVEC_INIT;
@@ -24,9 +24,9 @@ cjvec_t* cjvec_new(juve_arena_t* arena) {
     return vec;
 }
 
-cjvec_t* cjvec_lines();
+CJVec* cjvec_lines(void);
 
-void cjvec_push(cjvec_t* vec, void* data) {
+void cjvec_push(CJVec* vec, void* data) {
 
     if (vec->len >= vec->cap) {
         size_t newsz = vec->cap*2;
@@ -44,34 +44,24 @@ void cjvec_push(cjvec_t* vec, void* data) {
     vec->data[vec->len++] = data;
 }
 
-size_t cjvec_len(cjvec_t* vec) {
+size_t cjvec_len(CJVec* vec) {
     if (!vec) return -1;
     return vec->len;
 }
 
-void*  cjvec_at(cjvec_t* vec, size_t n) {
+void*  cjvec_at(CJVec* vec, size_t n) {
     if (!vec) return NULL;
     return vec->data[n];
 }
 
-void* cjvec_back(cjvec_t* vec) {
+void* cjvec_back(CJVec* vec) {
     if (!vec) return NULL;
     return vec->data[vec->len-1];    
 }
 
-void  cjvec_free(cjvec_t* vec) {
+void  cjvec_free(CJVec* vec) {
+    (void) vec;
     // don't free anything.
     // structure is allocated on the arena
 }
 
-void  cjvec_free_all(cjvec_t* vec, void* user_data, cjvec_free_fn fn) {
-    if (!vec) return;
-    
-    int max = cjvec_len(vec);
-    for (int i = 0; i < max; i++) {
-        void* data = cjvec_at(vec, i);
-        if (data) {
-            fn(user_data, data);
-        }
-    }
-}

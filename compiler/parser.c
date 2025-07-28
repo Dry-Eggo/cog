@@ -11,6 +11,7 @@
 #define get_pspan(p) (parser_now(p)->span)
 
 Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source) {
+    UNUSED(opts);
     Parser* parser = (Parser*)jarena_alloc(global_arena, sizeof(Parser));
     parser->tokens = tokens;
     parser->source = source;
@@ -153,14 +154,14 @@ Stmt* parse_stmt(Parser* parser) {
 
         VarDeclStmt vardecl = {0};
         
-        bool is_const = true;        
-        const bool is_uninit = false; // always false for 'let' bindings        
+        vardecl.is_const = true;        
+        vardecl.is_uninit = false; // always false for 'let' bindings
         
         if (match(parser, token_ident_k)) {
             vardecl.identifer = parser_now(parser)->text;
             parser_advance(parser);
         } else if (match(parser, token_oparen_k)) {
-            todo("Parser::parse_stmt::parse_vardecl: parse_pattern");
+            TODO("Parser::parse_stmt::parse_vardecl: parse_pattern");
         } else {
             add_error(parser, make_syntax_error(*parser_now(parser)->span, "Unqualified token", "expected an identifier or pattern"));
             recover_until(parser, token_semi_k);
@@ -178,7 +179,7 @@ Stmt* parse_stmt(Parser* parser) {
                 return NULL;
             }
         } else {
-            todo("invalid syntax");
+            TODO("invalid syntax");
         }
 
         ParseContext prev_ctx = parser->current_context;
@@ -192,7 +193,7 @@ Stmt* parse_stmt(Parser* parser) {
         }
         return stmt_make_vardecl(vardecl, span_merge(start, end));
     }
-    todo("Parser::parse_stmt: '%s'", parser_now(parser)->text);
+    TODO("Parser::parse_stmt: '%s'", parser_now(parser)->text);
     return stmt;
 }
 
@@ -201,7 +202,7 @@ Item* parse_item(Parser* parser) {
     if (match(parser, token_func_k)) {
 	    item = parse_function(parser);
     } else {
-	    todo("Parser::parse_item: other items");
+	    TODO("Parser::parse_item: other items");
     }
     return item;
 }
@@ -232,7 +233,19 @@ Expr*  parse_conditional(Parser* parser) {
 }
 
 Expr*  parse_additive(Parser* parser) {
+    Span* start = get_pspan(parser);
     Expr* lhs = parse_term(parser);
+
+    while (match(parser, token_add_k) || match(parser, token_sub_k)) {
+        BinaryOpExpr binop = {0};
+        binop.op = match(parser, token_add_k) ? BINOP_ADD: BINOP_SUB;
+        parser_advance(parser);
+        binop.lhs = lhs;
+        binop.rhs = parse_term(parser);
+        Span* end = get_pspan(parser);
+        lhs = expr_make_binop(binop, span_merge(start, end));
+    }
+    
     return lhs;
 }
 
@@ -260,6 +273,11 @@ Expr*  parse_atom(Parser* parser) {
         const char* ident = parser_now(parser)->text;
         parser_advance(parser);
         return expr_make_identifier(ident, span);
+    } else if (match(parser, token_cstring_k)) {
+        Span span = get_span(parser);
+        const char* value = parser_now(parser)->text;
+        parser_advance(parser);
+        return expr_make_cstring(value, span);
     } else {
 	    add_error(parser, make_syntax_error(*parser_now(parser)->span, "Not a valid expression", NULL));	
 	    if (parser->current_context == parse_func_body_k) recover_until(parser, token_eof_k);
@@ -289,7 +307,7 @@ TypeInfo* parse_type(Parser* parser) {
         parser_advance(parser);
         return type_new(type_none_k, "none", NULL);
     } else {
-        todo("parser::parse_type: custom typenames");
+        TODO("parser::parse_type: custom typenames");
     }
     
     add_error(parser, make_syntax_error(*parser_now(parser)->span, "Invalid type", NULL));   
@@ -306,6 +324,7 @@ bool parser_parse(Parser* parser) {
 }
 
 void parser_free(Parser* parser) {
+    UNUSED(parser);
     // do nothing
     // structure lives on the arena
 }

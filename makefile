@@ -9,7 +9,11 @@ CJUVE_SRC := $(wildcard juve/*.c)
 CJUVE_OBJ := $(patsubst juve/%.c, $(BINDIR)/%.o, $(CJUVE_SRC))
 CPPOBJ:= $(patsubst juve/%.cpp, $(BINDIR)/%.o, $(CPPSRC))
 OBJ:= $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.o, $(SRC))
-FLAGS:= -I$(INCDIR) -I.
+FLAGS:= -I$(INCDIR) -I. -Wall -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments
+
+CC := clang
+CXX := clang++
+
 
 TESTFILES := $(wildcard tests/*.kd)
 TESTOUTPUTS := $(patsubst tests/%.kd, tests/out/%.test, $(TESTFILES))
@@ -19,19 +23,19 @@ TARGET:= $(BINDIR)/kudoc
 all: $(TARGET)
 
 $(TARGET): $(OBJ) $(LIBJUVE)
-	clang++ -o $@ $^ $(FLAGS)
+	$(CXX) -o $@ $^ $(FLAGS)
 
 $(LIBJUVE): $(CPPOBJ) $(CJUVE_OBJ)
 	ar -rcs $@ $^
 
 $(BINDIR)/%.o: $(SRCDIR)/%.c
-	clang -c -o $@ $< $(FLAGS)
+	$(CC) -c -o $@ $< $(FLAGS)
 
 $(BINDIR)/%.o: juve/%.cpp
-	clang++ -c -o $@ $< $(FLAGS)
+	$(CXX) -c -o $@ $< $(FLAGS)
 
 $(BINDIR)/%.o: juve/%.c
-	clang -c -o $@ $< $(FLAGS)
+	$(CC) -c -o $@ $< $(FLAGS)
 
 clean:
 	rm $(shell find -type f -name "*~") $(LIBJUVE) $(OBJ) $(CPPOBJ)

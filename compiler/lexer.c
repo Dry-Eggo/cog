@@ -35,6 +35,13 @@ char lexer_now(Lexer* lexer) {
     return EOF;
 }
 
+char lexer_get(Lexer* lexer, size_t n) {
+    if (lexer->cursor + (n) < lexer->source_size) {
+	    return lexer->source[lexer->cursor + (n)];
+    }
+    return EOF;  
+}
+
 char lexer_advance(Lexer* lexer) {
     char ch = lexer_now(lexer);
     if (ch == '\n') {
@@ -46,7 +53,7 @@ char lexer_advance(Lexer* lexer) {
 }
 
 Token* lexer_parse_name(Lexer* lexer) {
-    juve_buffer_t* buffer = jb_create();
+    JBuffer* buffer = jb_create();
     size_t sl = lexer->line;
     size_t sc = lexer->column;
     
@@ -90,6 +97,33 @@ bool lexer_lex(Lexer* lexer) {
 	        continue;
 	    }
 
+        if (lexer_now(lexer) == 'c' && lexer_get(lexer, 1) == '"') {
+            lexer_advance(lexer); lexer_advance(lexer);
+            JBuffer* jb = jb_create();
+
+            size_t sl = lexer->line;
+            size_t sc = lexer->column;
+            
+            while (lexer_now(lexer) != EOF && lexer_now(lexer) != '"') {
+                jb_appendf_a(jb, global_arena, "%c", lexer_advance(lexer));
+            }
+            
+            ASSERT(lexer_now(lexer) != EOF, "Handle Unexpected EOF while lexing");
+            
+            lexer_advance(lexer); // skip trailing '"'
+            
+            const char* text = jb_str_a(jb, global_arena);
+            
+            Span* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
+            
+            Token* tok = token_new(span, token_cstring_k, jarena_strdup(global_arena, (char*)text));   
+            cjvec_push(lexer->tokens, (void*)tok);
+            
+            jb_free(jb);
+            
+            continue;
+        }
+        
 	    if (isalpha(lexer_now(lexer)) || lexer_now(lexer) == '_') {
 	        Token* tok = lexer_parse_name(lexer);
 	        cjvec_push(lexer->tokens, (void*)tok);
@@ -97,7 +131,7 @@ bool lexer_lex(Lexer* lexer) {
 	    }
 
         if (isdigit(lexer_now(lexer))) {
-            juve_buffer_t* buffer = jb_create();
+            JBuffer* buffer = jb_create();
             size_t sl = lexer->line;
             size_t sc = lexer->column;
             token_kind_t kind = token_number_k;
@@ -137,7 +171,8 @@ bool lexer_lex(Lexer* lexer) {
 	            cjvec_push(lexer->tokens, (void*)tok);
                 continue;
             }
-            todo("lexer: lex '-' token");
+            Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_sub_k, "-");
+	        cjvec_push(lexer->tokens, (void*)tok);
             continue;
         } break;
         case ';': {
@@ -170,8 +205,23 @@ bool lexer_lex(Lexer* lexer) {
 	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cbrace_k, "}");
 	        cjvec_push(lexer->tokens, (void*)tok);
 	    } break;
+        case '+': {
+	        lexer_advance(lexer);
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_add_k, "+");
+	        cjvec_push(lexer->tokens, (void*)tok);
+	    } break;
+        case '*': {
+	        lexer_advance(lexer);
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_mul_k, "*");
+	        cjvec_push(lexer->tokens, (void*)tok);
+	    } break;
+        case '/': {
+	        lexer_advance(lexer);
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_div_k, "/");
+	        cjvec_push(lexer->tokens, (void*)tok);
+	    } break;
 	    default:
-	        log_err("(%s:%ld:%ld) Invalid Character: '%c'\n", lexer->source_path, lexer->line, lexer->column, lexer_now(lexer));
+	        LOG_ERR("(%s:%ld:%ld) Invalid Character: '%c'\n", lexer->source_path, lexer->line, lexer->column, lexer_now(lexer));
 	        ok = false;
 	        lexer_advance(lexer);
 	        break;

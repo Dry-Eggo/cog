@@ -51,7 +51,7 @@ ExprResult eresult_new(CExpr* e, TypeInfo* ty) {
 
 
 Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, CompileOptions* opts) {
-    Semantics* sema = alloc(Semantics);
+    Semantics* sema = ALLOC(Semantics);
     sema->program = items;
     sema->source_lines = source_lines;
     sema->source = source;
@@ -104,7 +104,7 @@ bool type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2);
 // cbackend
 CType* sema_convert_type(Semantics* sema, TypeInfo* ty);
 
-void add_diagnostic(Semantics* sema, sema_error_t* err);
+void add_diagnostic(Semantics* sema, SemaError* err);
 
 void stream_out(Semantics* sema, const char* fmt, ...) {
     va_list args;
@@ -117,7 +117,7 @@ void stream_out(Semantics* sema, const char* fmt, ...) {
     va_end(args);
 }
 
-void add_diagnostic(Semantics* sema, sema_error_t* err) {
+void add_diagnostic(Semantics* sema, SemaError* err) {
     cjvec_push(sema->diagnostics, (void*)err);
 }
 
@@ -139,7 +139,9 @@ SymInfo* get_syminfo(Semantics* sema, const char* identifer) {
 }
 
 CType* sema_convert_type(Semantics* sema, TypeInfo* ty) {
-    return cctx_create_type_int32(sema->cctx, CIntSigned, false);
+    if (type_get_kind(ty) == type_int_k) return cctx_create_type_int32(sema->cctx, CIntSigned, false);
+    if (type_get_kind(ty) == type_cstring_k) return cctx_create_type_string(sema->cctx, true);
+    return NULL;
 }
 
 void check_function(Semantics* sema, Item* item) {
@@ -149,13 +151,13 @@ void check_function(Semantics* sema, Item* item) {
 
     if (funcdef.return_type) {
         if (type_get_kind(funcdef.return_type) == type_any_k) {
-            todo("funcdef.return_type == any");
+            TODO("funcdef.return_type == any");
         } else {        
             final_ty = get_type_info(sema, type_get_name(funcdef.return_type));
             if (!final_ty) {
                 // ERROR_IMPLEMENTATION
-                log_err("invalid type: '%s'\n", type_get_name(funcdef.return_type));
-                todo("error_implementation");
+                LOG_ERR("invalid type: '%s'\n", type_get_name(funcdef.return_type));
+                TODO("error_implementation");
             }
         }
     }
@@ -181,28 +183,36 @@ StmtResult check_stmt(Semantics* sema, Stmt* stmt) {
     if (stmt->kind == stmt_vardecl_k) {
         VarDeclStmt vardecl = stmt->data.vardecl;
         ExprResult expr = check_expr(sema, vardecl.rhs);
+
+        if (!expr.expr) {
+            // An error occured.
+            // we should not continue further.
+            // Diagnostics will have already been generated
+            return sresult_new(NULL);
+        }
+        
         TypeInfo* final_ty = vardecl.type;
         
         if (type_get_kind(vardecl.type) == type_any_k) {
             if (!expr.type) {
                 // ERROR_IMPLEMENTAION
-                log_err("invalid inference\n");
-                todo("error_implementation");
+                LOG_ERR("invalid inference\n");
+                TODO("error_implementation");
             }
             else {
                 final_ty = get_type_info(sema, type_get_name(expr.type));
                 if (!final_ty) {
                     // ERROR_IMPLEMENTAION
-                    log_err("invalid type: '%s'\n", type_get_name(vardecl.type));
-                    todo("error_implementation");                    
+                    LOG_ERR("invalid type: '%s'\n", type_get_name(vardecl.type));
+                    TODO("error_implementation");                    
                 }
             }
         } else {
             final_ty = get_type_info(sema, type_get_name(vardecl.type));
             if (!final_ty) {
                 // ERROR_IMPLEMENTAION
-                log_err("invalid type: '%s'\n", type_get_name(vardecl.type));
-                todo("error_implementation");
+                LOG_ERR("invalid type: '%s'\n", type_get_name(vardecl.type));
+                TODO("error_implementation");
             }
             
             if (!type_match(sema, final_ty, expr.type)) {
@@ -222,8 +232,8 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
     switch(expr->kind) {
     case expr_compound_stmt_k: {
         BlockExpr block = expr->data.block;
-        fori(Stmt*, stmt, stmt_count, block.statements) {
-            StmtResult res = check_stmt(sema, stmt);
+        FOREACH(Stmt*, stmt, stmt_count, block.statements) {
+            check_stmt(sema, stmt);
         }                
         return eresult_new(NULL, NULL);
     } break;
@@ -231,6 +241,11 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         CType* int_type = cctx_create_type_int32(sema->cctx, CIntSigned, false);
         CExpr* cexpr = cctx_create_value_int(sema->cctx, int_type, expr->data.literal.lit.int_value);
         return eresult_new(cexpr, get_type_info(sema, "int"));
+    } break;
+    case expr_cstring_k: {
+        CType* cstr_type = cctx_create_type_string(sema->cctx, true);
+        CExpr* cexpr = cctx_create_value_string(sema->cctx, cstr_type, expr->data.literal.lit.cstring_value);
+        return eresult_new(cexpr, get_type_info(sema, "cstr"));
     } break;
     case expr_ident_k: {
         const char* identifer = expr->data.literal.lit.str_value;
@@ -241,9 +256,43 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         }
         TypeInfo* var_type = syminfo_get_type(syminfo);
         return eresult_new(cctx_create_value_identifer(sema->cctx, identifer), get_type_info(sema, type_get_name(var_type)));
-    } break;    
+    } break;
+    case expr_binop_k: {
+        BinaryOpExpr binop = expr->data.binop;
+        ExprResult lhs_expr = check_expr(sema, binop.lhs);
+        ExprResult rhs_expr = check_expr(sema, binop.rhs);
+
+        ASSERT(lhs_expr.type != NULL, "lhs_type is null");
+        ASSERT(rhs_expr.type != NULL, "rhs_type is null");
+
+        const char* lhs_ty = type_get_name(lhs_expr.type);
+        const char* rhs_ty = type_get_name(rhs_expr.type);
+        
+        if (!type_match(sema, lhs_expr.type, get_type_info(sema, "int"))) {
+            add_diagnostic(sema, make_invalid_binary_operand(binop.lhs->span, lhs_ty));  
+        }
+
+        if (!type_match(sema, rhs_expr.type, get_type_info(sema, "int"))) {
+            add_diagnostic(sema, make_invalid_binary_operand(binop.rhs->span, rhs_ty));  
+        }
+        
+        if (!type_match(sema, lhs_expr.type, rhs_expr.type)) {
+
+            // In the future, BinaryOp Interface may be implemented to support operator overloading
+            // But for now. this is an invalid operation           
+            add_diagnostic(sema, make_invalid_operand_type(binop.lhs->span, binop.rhs->span, lhs_ty, rhs_ty));
+            return eresult_new(NULL, lhs_expr.type);
+        }
+        
+        switch (binop.op) {
+        case BINOP_ADD: return eresult_new(cctx_add_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr), lhs_expr.type);
+        case BINOP_SUB: return eresult_new(cctx_sub_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr), lhs_expr.type);
+        default: TODO("Add all operators");
+        }
+        
+    } break;
     default:
-        todo("Semantics::check_expr::default");
+        TODO("Semantics::check_expr::default");
         break;
     }
     return eresult_new(NULL, NULL);
@@ -257,7 +306,8 @@ TypeInfo* get_type_info(Semantics* sema, const char* type_name) {
 }
 
 bool type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2) {
-    // todo: more structural comparison
+    UNUSED(sema);
+    // TODO: more structural comparison
     return type_get_kind(t1) == type_get_kind(t2);
 }
 
@@ -269,7 +319,7 @@ TypeInfo*  check_type(Semantics* sema, TypeInfo* type) {
             return int_type;
         }
     }
-    todo("Semantics::check_type: add more types");
+    TODO("Semantics::check_type: add more types");
     return NULL;
 }
 
@@ -278,7 +328,7 @@ CJVec* sema_get_diagnostics(Semantics* sema) {
 }
 
 bool sema_run_first_pass(Semantics* sema) {
-    fori(Item*, item, item_count, sema->program) {
+    FOREACH(Item*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             add_func(sema, item->data.fndef);
         }        
@@ -287,7 +337,7 @@ bool sema_run_first_pass(Semantics* sema) {
 }
 
 bool sema_run_second_pass(Semantics* sema) {
-    fori(Item*, item, item_count, sema->program) {
+    FOREACH(Item*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
             check_function(sema, item);
         }        

@@ -1,0 +1,21 @@
+Kudo: Error: (4:27): cannot perform operation on type 'cstr'
+    ----> tests/binaryop.kd
+       |
+     3 |     let name := c"Dry";
+     4 |     let age : int = 50 + name;
+       |                          ^~~~ 
+
+Kudo: Error: (4:22): invalid operation between 'int' and 'cstr'
+    ----> tests/binaryop.kd
+       |
+     4 |     let age : int = 50 + name;
+       |                     ^~   ^~~~ 
+
+Kudo: Error: (5:18): symbol 'age' was not declared in this scope
+    ----> tests/binaryop.kd
+       |
+     4 |     let age : int = 50 + name;
+     5 |     let age2 := age;
+       |                 ^~~ 
+
+Kudo: compilation aborted

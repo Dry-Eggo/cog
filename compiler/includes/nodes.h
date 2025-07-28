@@ -12,7 +12,10 @@ typedef struct expr_literal {
     Span span;
     literal_kind_t kind;
     union {
-	    const char* str_value; /* used for both identifers and any value that requires string storage */
+	    const char* str_value;
+        const char* identifier_value;
+        const char* cstring_value;
+        
 	    long int_value;
 	    bool bool_value;
 	    char char_value;
@@ -52,12 +55,24 @@ typedef struct expr_block {
     CJVec* statements;
 } BlockExpr;
 
+typedef struct expr_binop {
+    enum { BINOP_ADD, BINOP_SUB, BINOP_MUL, BINOP_DIV } op;
+    Expr* lhs;
+    Expr* rhs;
+} BinaryOpExpr;
+
+typedef struct expr_inner {
+    Expr* inner;
+} InnerExpr;
+
 struct expr_ {
     expr_kind_t kind;
     Span span;
     union {
 	    struct expr_literal literal;
 	    struct expr_block   block;
+        struct expr_binop   binop;
+        struct expr_inner   inner_expr;
     } data;
 };
 
@@ -81,6 +96,8 @@ typedef struct {
 Expr* expr_make_block(CJVec* stmts);
 Expr* expr_make_literal_int(long value, Span span);
 Expr* expr_make_identifier(const char* name, Span span);
+Expr* expr_make_binop(BinaryOpExpr expr, Span span);
+Expr* expr_make_cstring(const char* value, Span span);
 Stmt* stmt_make_vardecl(VarDeclStmt vardecl, Span);
 
 Item* item_make_fndef(FunctionDef fn, Span span);

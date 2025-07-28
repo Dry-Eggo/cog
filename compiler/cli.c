@@ -16,7 +16,7 @@ void parse_short_flag(CompileOptions* opts, char flag, int* i, int argc, char** 
             opts->input_file = shift(i, argv);
         } else {
             print_usage(argv[0]);
-            log_err("'-%c' expected an argument\n", flag);
+            LOG_ERR("'-%c' expected an argument\n", flag);
             exit(1);
         }
         break;
@@ -25,7 +25,7 @@ void parse_short_flag(CompileOptions* opts, char flag, int* i, int argc, char** 
             opts->output_file = shift(i, argv);
         } else {
             print_usage(argv[0]);
-            log_err("'-%c' expected an argument\n", flag);
+            LOG_ERR("'-%c' expected an argument\n", flag);
             exit(1);
         }
         break;
@@ -40,10 +40,10 @@ void parse_short_flag(CompileOptions* opts, char flag, int* i, int argc, char** 
         opts->test_mode = true;        
         break;
     case 'D':
-        todo("compiler defines not implemented yet: '%s'", argv[*i - 1] + 2);
+        TODO("compiler defines not implemented yet: '%s'", argv[*i - 1] + 2);
         break;
     default:
-        log_err("unknown flag '-%c'\n", flag);
+        LOG_ERR("unknown flag '-%c'\n", flag);
         exit(1);
         break;
     }
@@ -54,13 +54,13 @@ void parse_short_flags(CompileOptions* opts, int* i, int argc, char** argv) {
     size_t len = strlen(arg);
     if (len > 1) {
         int cursor = *i;
-        for (int n = 0; n < len; ++n) {
+        for (size_t n = 0; n < len; ++n) {
             char flag = arg[n];
             parse_short_flag(opts, flag, i, argc, argv);
             
             // was an argument taken?
             if (cursor != *i && n != len - 1) {
-                log_err("in '-%s', '%c' takes an argument. consider seperating it\n", arg, flag);
+                LOG_ERR("in '-%s', '%c' takes an argument. consider seperating it\n", arg, flag);
                 exit(1);
             }
         }
@@ -78,7 +78,7 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
             const char* value = arg + 7;
             if (strlen(value) == 0) {
                 print_usage(argv[0]);
-                log_err("'--output' expected an argument\n");
+                LOG_ERR("'--output' expected an argument\n");
                 exit(1);                
             } else {
                 opts->output_file = shift(i, argv);                
@@ -89,7 +89,7 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
             opts->output_file = shift(i, argv);
         } else {
             print_usage(argv[0]);
-            log_err("'--output' expected an argument\n");
+            LOG_ERR("'--output' expected an argument\n");
             exit(1);
         }
     }
@@ -99,7 +99,7 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
             const char* value = arg + 6;
             if (strlen(value) == 0) {
                 print_usage(argv[0]);
-                log_err("'--input' expected an argument\n");
+                LOG_ERR("'--input' expected an argument\n");
                 exit(1);                
             } else {
                 opts->output_file = shift(i, argv);                
@@ -110,7 +110,7 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
             opts->output_file = shift(i, argv);
         } else {
             print_usage(argv[0]);
-            log_err("'--input' expected an argument\n");
+            LOG_ERR("'--input' expected an argument\n");
             exit(1);
         }
     }
@@ -126,7 +126,7 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
         exit(1);
     }
     else {
-        log_err("unknown argument: '%s'. skipping\n", arg);
+        LOG_ERR("unknown argument: '%s'. skipping\n", arg);
     }
 }
 
@@ -149,7 +149,7 @@ void parse_args(CompileOptions* opts, int argc, char** argv) {
                 continue;
             }            
         } else {
-            log_err("unknown argument: '%s'. skipping\n", arg);
+            LOG_ERR("unknown argument: '%s'. skipping\n", arg);
         }
     }
     
