@@ -1,4 +1,3 @@
-Running Command: clang -c -o main.o main.c 
 int main()
 {
     const char* name = "Dry";

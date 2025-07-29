@@ -41,21 +41,22 @@ void emit_file(CompileOptions* compile_options, JBuffer* compiled_file) {
     cjb_appendf(tmp, "%s.c", filestem);
     const char* tmp_cfile = cjb_str(tmp);
     cjb_clear(tmp);
+
+    const char* content = jb_str_a(compiled_file, global_arena);
     
-    jfile_write(tmp_cfile, jb_str_a(compiled_file, global_arena));
+    jfile_write(tmp_cfile, content);
 
     CJCmd cmd = jcmd_init(global_arena, JCMD_LOG);
     
     if (!compile_options->output_file) {       
         cjb_appendf(tmp, "%s.o", filestem);
         compile_options->output_file = cjb_str(tmp);
+    }
+    
+    cmd_append(&cmd, "clang", "-c -o", compile_options->output_file, tmp_cfile);
+    jcmd_one_shot(&cmd);
 
-        cmd_append(&cmd, "clang", "-c -o", compile_options->output_file, tmp_cfile);
-        jcmd_one_shot(&cmd);
-    }  else {        
-        cmd_append(&cmd, "clang", "-c -o", compile_options->output_file, tmp_cfile);
-        jcmd_one_shot(&cmd);
-    }    
+    if (compile_options->test_mode) printf("%s", content);
 }
 
 void kudo_compile(CompileOptions* compile_options) {
