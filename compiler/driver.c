@@ -46,7 +46,7 @@ void emit_file(CompileOptions* compile_options, JBuffer* compiled_file) {
     
     jfile_write(tmp_cfile, content);
 
-    CJCmd cmd = jcmd_init(global_arena, JCMD_LOG);
+    CJCmd cmd = jcmd_init(global_arena, JCMD_NOT_SET);
     
     if (!compile_options->output_file) {       
         cjb_appendf(tmp, "%s.o", filestem);
