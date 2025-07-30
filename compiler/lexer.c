@@ -65,6 +65,9 @@ Token* lexer_parse_name(Lexer* lexer) {
     if (jb_eq(buffer, "func")) {
 	    kind = token_func_k;
 	    text = "func";
+    } else if (jb_eq(buffer, "extern")) {
+	    kind = token_extern_k;
+	    text = "extern";
     } else if (jb_eq(buffer, "let")) {
 	    kind = token_let_k;
 	    text = "let";
@@ -209,6 +212,20 @@ bool lexer_lex(Lexer* lexer) {
 	        lexer_advance(lexer);
 	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_add_k, "+");
 	        cjvec_push(lexer->tokens, (void*)tok);
+	    } break;
+        case ',': {
+	        lexer_advance(lexer);
+	        Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_comma_k, ",");
+	        cjvec_push(lexer->tokens, (void*)tok);
+	    } break;
+        case '.': {
+            if (lexer_get(lexer, 1) == '.' && lexer_get(lexer, 2) == '.') {
+                lexer_advance(lexer); lexer_advance(lexer); lexer_advance(lexer);
+	            Token* tok = token_new(span_new(sl, sc, lexer->column-1, lexer->source_path), token_cvariadic_k, "...");
+	            cjvec_push(lexer->tokens, (void*)tok);
+                continue;
+            }
+            TODO("lex '.'");
 	    } break;
         case '*': {
 	        lexer_advance(lexer);

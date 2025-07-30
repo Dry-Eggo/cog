@@ -38,15 +38,31 @@ typedef struct stmt_vardecl {
     Expr* rhs;
 } VarDeclStmt;
 
+typedef struct param_expr {
+    const char* name;
+    bool        has_init;
+
+    Span        span;
+    TypeInfo*   type;
+    Expr*       default_initializer;
+} ParamDef;
+
+typedef struct {
+    ParamDef* items;
+    size_t    count;
+    size_t    capacity;
+} Params;
+
 typedef struct item_funcdef {
     bool is_extern;
     bool is_decl;
+    bool is_variadic;
     
     Span name_span;
     const char* name;
     const char* linkage_name;
     
-    JVec*   params; // vector of param_t*
+    Params    params;
     Expr*     body;
     TypeInfo*     return_type;
 } FunctionDef;

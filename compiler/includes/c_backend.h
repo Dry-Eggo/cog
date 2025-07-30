@@ -3,11 +3,12 @@
 #include <compiler_opt.h>
 #include <stdint.h>
 
-typedef struct CContext CContext;
-typedef struct CFunction CFunction;
-typedef struct CType CType;
-typedef struct CExpr CExpr;
-typedef struct CStmt CStmt;
+typedef struct CContext    CContext;
+typedef struct CParam      CParam;
+typedef struct CFunction   CFunction;
+typedef struct CType       CType;
+typedef struct CExpr       CExpr;
+typedef struct CStmt       CStmt;
 
 typedef enum {
     CStorageExtern,
@@ -29,7 +30,12 @@ typedef enum {
 } CIntSign;
 
 CContext*  cctx_new(JArena* arena);
-CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CJVec* sattr, CType* type, bool has_definition);
+
+CParam*    cctx_new_parameter(CContext* cctx, const char* name, CType* type);
+
+CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CType* type, bool has_definition);
+void       cctx_function_set_extern(CContext* cctx, CFunction* func);
+void       cctx_function_set_variadic(CContext* cctx, CFunction* func);
 void       cctx_end_function(CContext* cctx, CFunction* func, CExpr* value);
 
 // int 

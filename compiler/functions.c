@@ -12,10 +12,9 @@ struct function_info_s {
 };
 
 ParamInfo* param_info_new(const char* name, TypeInfo* type) {
-    UNUSED(name);
-    UNUSED(type);
     ParamInfo* pinfo = ALLOC(ParamInfo);
-    TODO("param_info: new");
+    pinfo->name = name;
+    pinfo->type = type;
     return pinfo;
 }
 

@@ -3,6 +3,7 @@
 typedef enum {
     // keywords
     token_func_k,
+    token_extern_k,
     token_return_k,
     token_let_k,
     token_var_k,
@@ -30,6 +31,7 @@ typedef enum {
     token_comma_k,      // ,
     token_coleq_k,      // :=
     token_eq_k,
+    token_cvariadic_k,  // ...
 
     // operators
     token_add_k,

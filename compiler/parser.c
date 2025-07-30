@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <types.h>
 #include <defines.h>
+#include <utils/array.h>
 
 #define err_semi(p) add_error(p, make_syntax_error(*parser_now(p)->span, "Unqualified token", "did you forget a ';'"))
 #define get_span(p) (*parser_now(p)->span)
@@ -105,6 +106,50 @@ Token* parser_before(Parser* parser) {
     return (Token*)cjvec_back(parser->tokens);
 }
 
+Item* parse_extern(Parser* parser) {
+    parser_advance(parser);
+
+    if (match(parser, token_func_k)) {
+        Item* func = parse_function(parser);
+        func->data.fndef.is_extern = true;
+        return func;
+    }
+    
+    UNREACHABLE;
+}
+
+ParamDef parse_param(Parser* parser) {
+    const char* param_name = NULL;
+    TypeInfo*   param_type = NULL;
+    Expr*       param_init = NULL;
+    bool        has_init   = false;
+    Span        param_span = {0};
+    
+    if (match(parser, token_ident_k)) {
+        param_name = parser_now(parser)->text;
+        param_span = get_span(parser);
+        parser_advance(parser);
+    } else {
+        TODO("handle missing parameter name");
+    }
+
+    if (!expect(parser, token_colon_k)) {
+        TODO("handle missing type annotation");
+    }
+
+    param_type = parse_type(parser);
+    
+    if (!param_type) {
+        TODO("handle invalid type");
+    }
+
+    if (match(parser, token_eq_k)) {
+        TODO("handle param default");
+    }
+        
+    return (ParamDef) {param_name, has_init, param_span, param_type, param_init};
+}
+
 Item* parse_function(Parser* parser) {
     Span* start = get_pspan(parser);
     expect(parser, token_func_k);
@@ -122,8 +167,24 @@ Item* parse_function(Parser* parser) {
 
     if (match(parser, token_oparen_k)) {
 	    parser_advance(parser);
+        Params params = {0};
+        while (!match(parser, token_cparen_k)) {
+
+            if (match(parser, token_cvariadic_k)) {
+                funcdef.is_variadic = true;
+                parser_advance(parser);
+                break;
+            }
+            
+            ParamDef param = parse_param(parser);
+            arr_append(&params, param, global_arena);
+            if (match(parser, token_comma_k)) {
+                parser_advance(parser);
+            }
+        }
+        funcdef.params = params;
 	    if (!expect(parser, token_cparen_k))  {
-	        recover_until(parser, token_eof_k);
+            TODO("handle no matching paren");
 	    }
     }
 
@@ -134,15 +195,17 @@ Item* parse_function(Parser* parser) {
             recover_until(parser, token_eof_k);
         }        
     }
-
     funcdef.return_type = return_type;
+    if (match(parser, token_semi_k)) {
+        funcdef.is_decl = true;
+        parser_advance(parser);
+    } else {    
+        parser->current_context = parse_func_body_k;
+        funcdef.body = parse_expr(parser);
+        parser->current_context = parse_context_no_set;
+    }
     
-    parser->current_context = parse_func_body_k;
-    funcdef.body = parse_expr(parser);
-    parser->current_context = parse_context_no_set;
-
     Span* end = get_pspan(parser);
-    
     return item_make_fndef(funcdef, span_merge(start, end));
 }
 
@@ -201,6 +264,8 @@ Item* parse_item(Parser* parser) {
     Item* item = NULL;
     if (match(parser, token_func_k)) {
 	    item = parse_function(parser);
+    } else if (match(parser, token_extern_k)) {
+        item = parse_extern(parser);
     } else {
 	    TODO("Parser::parse_item: other items");
     }

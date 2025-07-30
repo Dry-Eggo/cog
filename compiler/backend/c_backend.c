@@ -86,16 +86,22 @@ struct CContext {
     JArena*  arena;
 };
 
+struct CParam {    
+    const char* name;
+    CType*      type;
+};
+
 struct CFunction {
     const char* name;
     CType*      type;    
-    CJVec*      sattr; // extern, inline, static
     CJVec*      params;
 
     CExpr*      return_value;
     
     CBlock*     block;    
     bool        has_definition;
+    bool        is_extern;
+    bool        is_variadic;
 };
 
 struct CType {
@@ -147,15 +153,33 @@ void cctx_end_block(CContext* cctx) {
     }
 }
 
-CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CJVec* sattr, CType* type, bool has_definition) {
+CParam* cctx_new_parameter(CContext* cctx, const char* name, CType* type) {
+    CParam* param = CCTX_ALLOC(cctx, CParam);
+    param->name = jarena_strdup(cctx->arena, (char*)name);
+    param->type = type;
+    return param;
+}
+
+void cctx_function_set_extern(CContext* cctx, CFunction* func) {
+    UNUSED(cctx);
+    func->is_extern = true;
+}
+
+void cctx_function_set_variadic(CContext* cctx, CFunction* func) {
+    UNUSED(cctx);
+    func->is_variadic = true;
+}
+
+CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CType* type, bool has_definition) {
     CFunction* func = CCTX_ALLOC(cctx, CFunction);
     func->name = name;
     func->params = params;
-    func->sattr = sattr;
     func->type = type;
     func->return_value = NULL;
     func->has_definition = has_definition;
-
+    func->is_extern = false;
+    func->is_variadic = false;
+    
     if (func->has_definition) {
         // if we are making a function, this means that we are currently in the global
         // scope hence no parent block
@@ -316,11 +340,26 @@ void cctx_walk_block(CContext* cctx, CBlock* block) {
     jtab_sub_level(&cctx->tab_tracker);
 }
 
+const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
+    JBuffer* tmp = jb_create();
+
+    FOREACH(CParam*, param, i, params) {
+        const char* name = param->name;
+        const char* type = cctx_type_to_str(cctx, param->type);
+        jb_appendf_a(tmp, cctx->arena, "%s %s", type, name);
+        if (i == cjvec_len(params) - 1) break;
+        jb_appendf_a(tmp, cctx->arena, ",");
+    }
+    const char* res = jb_str_a(tmp, cctx->arena);
+    return res;
+}
+
 void cctx_walk_function(CContext* cctx, CFunction* func) {
     const char* name = func->name;
     const char* type_str = cctx_type_to_str(cctx, func->type);
 
-    jb_appendf_a(cctx->body, cctx->arena, "%s %s()", type_str, name);
+    jb_appendf_a(cctx->body, cctx->arena, "%s %s %s (%s%s", (func->is_extern) ? "extern" : "", type_str, name,
+    cctx_walk_parameters(cctx, func->params), func->is_variadic ? ", ...)" : ")");
     if (func->return_value) {
         TODO("implement return values");
     }

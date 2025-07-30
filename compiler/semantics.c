@@ -144,10 +144,21 @@ CType* sema_convert_type(Semantics* sema, TypeInfo* ty) {
     return NULL;
 }
 
+CJVec* sema_convert_param(Semantics* sema, Params params) {
+    CJVec* vec = cjvec_new(global_arena);
+    size_t max = params.count;
+    for (size_t i = 0; i < max; ++i) {
+        ParamDef paramdef = params.items[i];
+        CType*   type     = sema_convert_type(sema, paramdef.type);
+        cjvec_push(vec, cctx_new_parameter(sema->cctx, paramdef.name, type));
+    }
+    
+    return vec;
+}
+
 void check_function(Semantics* sema, Item* item) {
     FunctionDef funcdef = item->data.fndef;
     TypeInfo* final_ty = NULL;
-    if (funcdef.is_extern) stream_out(sema, "extern ");
 
     if (funcdef.return_type) {
         if (type_get_kind(funcdef.return_type) == type_any_k) {
@@ -165,16 +176,22 @@ void check_function(Semantics* sema, Item* item) {
     if (strcmp(funcdef.name,"main") == 0) {
         final_ty = get_type_info(sema, "int");
     }
-
-    CType* functype = sema_convert_type(sema, final_ty);    
-    CFunction* func =  cctx_create_function(sema->cctx, funcdef.name, NULL, NULL, functype, true);
     
-    if (funcdef.is_decl) stream_out(sema, ";");
-    else {
-        if (funcdef.body) {
-            check_expr(sema, funcdef.body);
-        }
+    CType* functype = sema_convert_type(sema, final_ty);    
+    CFunction* func = NULL;
+
+    CJVec* params = sema_convert_param(sema, funcdef.params);
+    
+    if (funcdef.is_decl) {
+        func =  cctx_create_function(sema->cctx, funcdef.name, params, functype, false);        
     }
+    else {
+        func =  cctx_create_function(sema->cctx, funcdef.name, params, functype, true);
+        check_expr(sema, funcdef.body);
+    }
+    
+    if (funcdef.is_extern) cctx_function_set_extern(sema->cctx, func);
+    if (funcdef.is_variadic) cctx_function_set_variadic(sema->cctx, func);
     
     cctx_end_function(sema->cctx, func, NULL);
 }

@@ -98,6 +98,7 @@ void kudo_compile(CompileOptions* compile_options) {
     driver->sema = semantics_init(driver->parser->items, driver->source_lines, driver->lexer->source, compile_options);
     if (!sema_check(driver->sema)) {
         sema_error_flush(sema_get_diagnostics(driver->sema), driver->source_lines);
+        fprintf(stderr, "Kudo: %ld semantic errors occurred\n", cjvec_len(sema_get_diagnostics(driver->sema)));
         abort_compilation(driver);
     }
     

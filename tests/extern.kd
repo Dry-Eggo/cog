@@ -1,0 +1,2 @@
+
+extern func printf(fmt: cstr, ...) -> int;

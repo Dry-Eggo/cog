@@ -3,17 +3,16 @@ SRCDIR:= compiler
 INCDIR:= $(SRCDIR)/includes
 LIBNAME:= libjuve.a
 LIBJUVE:= $(BINDIR)/$(LIBNAME)
-SRC:= $(wildcard $(SRCDIR)/*.c)
+SRC:= $(shell find ./$(SRCDIR) -type f -name '*.c')
 CPPSRC:= $(wildcard juve/*.cpp)
 CJUVE_SRC := $(wildcard juve/*.c)
 CJUVE_OBJ := $(patsubst juve/%.c, $(BINDIR)/%.o, $(CJUVE_SRC))
 CPPOBJ:= $(patsubst juve/%.cpp, $(BINDIR)/%.o, $(CPPSRC))
-OBJ:= $(patsubst $(SRCDIR)/%.c, $(BINDIR)/%.o, $(SRC))
-FLAGS:= -I$(INCDIR) -I. -Wall -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments
+OBJ:= $(addprefix $(BINDIR)/, $(addsuffix .o, $(basename $(notdir $(SRC)))))
+FLAGS:= -I$(INCDIR) -I. -I$(SRCDIR) -Wall -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -ggdb
 
 CC := clang
 CXX := clang++
-
 
 TESTFILES := $(wildcard tests/*.kd)
 TESTOUTPUTS := $(patsubst tests/%.kd, tests/out/%.test, $(TESTFILES))
@@ -30,6 +29,9 @@ $(LIBJUVE): $(CPPOBJ) $(CJUVE_OBJ)
 
 $(BINDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) -c -o $@ $< $(FLAGS)
+
+$(BINDIR)/%.o: $(SRCDIR)/*/%.c
+	$(CC) -c -o $@ $< $(FLAGS)	
 
 $(BINDIR)/%.o: juve/%.cpp
 	$(CXX) -c -o $@ $< $(FLAGS)
