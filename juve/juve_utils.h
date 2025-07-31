@@ -76,6 +76,9 @@ void*       jmap_get(JMap*, const char*);
 void        jmap_free(JMap*);
 
 //==------------------- Pure Implemntation -------------------===
+
+typedef struct CJArena CJArena;
+
 typedef struct CJVec CJVec;
 CJVec*      cjvec_new(JArena* arena);
 CJVec*      cjvec_lines(void);
