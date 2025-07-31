@@ -24,3 +24,7 @@ TypeInfo* syminfo_get_type(SymInfo* sym) {
     if (!sym) return NULL;
     return sym->type;
 }
+
+SymType sym_type(SymInfo* sym) {
+    return sym->kind;    
+}

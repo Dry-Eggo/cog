@@ -60,7 +60,7 @@ Token* lexer_parse_name(Lexer* lexer) {
     while (lexer_now(lexer) != EOF && (isalnum(lexer_now(lexer)) || lexer_now(lexer) == '_')) {
 	    jb_appendf_a(buffer, global_arena, "%c", lexer_advance(lexer));
     }
-    token_kind_t kind = token_ident_k;
+    TokenKind kind = token_ident_k;
     const char* text  = NULL;
     if (jb_eq(buffer, "func")) {
 	    kind = token_func_k;
@@ -137,7 +137,7 @@ bool lexer_lex(Lexer* lexer) {
             JBuffer* buffer = jb_create();
             size_t sl = lexer->line;
             size_t sc = lexer->column;
-            token_kind_t kind = token_number_k;
+            TokenKind kind = token_number_k;
             
             while (isdigit(lexer_now(lexer))) {
                 jb_appendf_a(buffer, global_arena, "%c", lexer_advance(lexer));

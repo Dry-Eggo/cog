@@ -13,12 +13,12 @@ Span* span_new(size_t line, size_t col, size_t off, const char* filename) {
 Span span_merge(Span* start, Span* end) {   
     return (Span) {
         .line = start->line,
-        .column = start->line,
+        .column = start->column,
         .offset = end->offset,
     };
 }
 
-Token* token_new(Span* span, token_kind_t kind, const char* text) {
+Token* token_new(Span* span, TokenKind kind, const char* text) {
     Token* tok = (Token*)jarena_alloc(global_arena, sizeof(Token));
     tok->span = span;
     tok->kind = kind;

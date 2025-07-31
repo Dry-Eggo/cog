@@ -51,6 +51,14 @@ SemaError* make_invalid_operand_type(Span op1, Span op2, const char* op1_ty, con
     return err;
 }
 
+SemaError*  make_generic_error(Span span, const char* message, const char* hint) {
+    SemaError* err = ALLOC(SemaError);
+    err->kind = SemaErrorGeneric;
+    err->as.gen.span = span;
+    err->as.gen.message = message;
+    err->as.gen.hint = hint;
+    return err;
+}
 
 void underline_span(Span span, const char* line) {
     int fc = 0;
@@ -67,7 +75,7 @@ void underline_span(Span span, const char* line) {
 		        fprintf(stderr, "~");
 	        }
 	    } else {
-            fprintf(stderr," ");
+            fprintf(stderr, " ");
 	    }
     }
 }
@@ -78,7 +86,7 @@ void underline_span2(Span span, Span span2, const char* line) {
 	    fc++;
 	    fprintf(stderr, " ");
     }
-    size_t last;
+    size_t last = 0;
     for (last = fc; last < span.offset; ++last) {
 	    if (last >= span.column - 1 && last <= span.offset - 1) {
 	        if (last == span.column - 1) {
@@ -117,7 +125,7 @@ void report_err(SyntaxError* err, const char* line, JVec* source) {
 
     const char* prev_line = span.line - 1 > 1 ? jvec_at(source, span.line - 2) : NULL;
     
-    fprintf(stderr, "%sKudo%s: %s%sSyntax Error%s: (%ld:%ld): %s\n", c(color_bold_k), c(color_reset_k), c(color_bold_k),
+    fprintf(stderr, "%sCog%s: %s%sSyntax Error%s: (%ld:%ld): %s\n", c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err->message);
     fprintf(stderr, "    ----> %s\n", span.filename);
     print_gutter_line(true);
@@ -146,7 +154,7 @@ void format_err_inv_ty(InvalidTypeError err, JVec* source) {
     Span span = err.span;
     const char* line1 = span.line - 1 <= 1 ? NULL: jvec_at(source, span.line - 2);
     const char* line2 = jvec_at(source, span.line - 1);
-    fprintf(stderr, "%sKudo%s: %s%sType Error%s: (%ld:%ld): cannot implicitly convert from '%s' to '%s'\n",
+    fprintf(stderr, "%sCog%s: %s%sType Error%s: (%ld:%ld): cannot implicitly convert from '%s' to '%s'\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.got, err.expected);
     fprintf(stderr, "    ----> %s\n", span.filename);
@@ -164,7 +172,7 @@ void format_err_un_var(UndeclaredVarError err, JVec* source) {
     Span span = err.span;
     const char* line1 = span.line - 1 <= 1 ? NULL: jvec_at(source, span.line - 2);
     const char* line2 = jvec_at(source, span.line - 1);
-    fprintf(stderr, "%sKudo%s: %s%sError%s: (%ld:%ld): symbol '%s' was not declared in this scope\n",
+    fprintf(stderr, "%sCog%s: %s%sError%s: (%ld:%ld): symbol '%s' was not declared in this scope\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.name);
     fprintf(stderr, "    ----> %s\n", span.filename);
@@ -182,7 +190,7 @@ void format_err_inv_op(OperandTypeMismatch err, JVec* source) {
     Span span = err.op1;   
     const char* line2 = jvec_at(source, span.line - 1);
     
-    fprintf(stderr, "%sKudo%s: %s%sError%s: (%ld:%ld): invalid operation between '%s' and '%s'\n",
+    fprintf(stderr, "%sCog%s: %s%sError%s: (%ld:%ld): invalid operation between '%s' and '%s'\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.op1_ty, err.op2_ty);
     fprintf(stderr, "    ----> %s\n", span.filename);
@@ -199,7 +207,7 @@ void format_err_inv_bin_opr(InvalidBinaryOperand err, JVec* source) {
     const char* line1 = span.line - 1 <= 1 ? NULL: jvec_at(source, span.line - 2);
     const char* line2 = jvec_at(source, span.line - 1);
     
-    fprintf(stderr, "%sKudo%s: %s%sError%s: (%ld:%ld): cannot perform operation on type '%s'\n",
+    fprintf(stderr, "%sCog%s: %s%sError%s: (%ld:%ld): cannot perform operation on type '%s'\n",
     c(color_bold_k), c(color_reset_k), c(color_bold_k),
     c(color_red_k), c(color_reset_k), span.line, span.column, err.type_str);
     fprintf(stderr, "    ----> %s\n", span.filename);
@@ -210,6 +218,19 @@ void format_err_inv_bin_opr(InvalidBinaryOperand err, JVec* source) {
     print_gutter_with_line(span.line, line2);
     print_gutter_line(false);
     underline_span(span, line2);
+    fprintf(stderr, "\n");   
+}
+
+void format_err_generic(GenericSema err, JVec* source) {
+    Span span = err.span;
+    const char* line = jvec_at(source, span.line - 1);
+        fprintf(stderr, "%sCog%s: %s%sError%s: (%ld:%ld): %s\n",
+    c(color_bold_k), c(color_reset_k), c(color_bold_k),
+    c(color_red_k), c(color_reset_k), span.line, span.column, err.message);
+    fprintf(stderr, "    ----> %s\n", span.filename);
+    print_gutter_with_line(span.line, line);
+    print_gutter_line(false);
+    underline_span(span, line);
     fprintf(stderr, "\n");   
 }
 
@@ -227,6 +248,9 @@ void sema_error_flush(CJVec* errors, JVec* source) {
         } break;
         case SemaErrorInvalidBinaryOperand: {
             format_err_inv_bin_opr(err->as.inv_bin_opr, source);
+        } break;
+        case SemaErrorGeneric: {
+            format_err_generic(err->as.gen, source);
         } break;
         default:
             UNREACHABLE;

@@ -14,3 +14,4 @@ typedef struct symbol_info_s SymInfo;
 
 SymInfo* syminfo_new(const char* name, Span decl, TypeInfo* type, SymType kind);
 TypeInfo* syminfo_get_type(SymInfo* sym);
+SymType sym_type(SymInfo* sym);

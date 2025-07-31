@@ -1,0 +1,7 @@
+extern int printf (const char* fmt, ...); // printf
+extern int strlen (const char* s); // strlen
+int main ()
+{
+    int age = 40;
+    printf("Hello World %d\n", strlen("Hello"));
+} // main

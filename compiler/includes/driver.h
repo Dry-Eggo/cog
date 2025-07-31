@@ -32,4 +32,4 @@ typedef struct {
 
 Driver* driver_new(const char* source, CompileOptions* opts);
 
-void kudo_compile(CompileOptions* opts);
+void cog_compile(CompileOptions* opts);

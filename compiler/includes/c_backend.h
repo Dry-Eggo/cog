@@ -49,8 +49,10 @@ CExpr*    cctx_create_value_char(CContext* ctx, CType* type, char value);
 CExpr*    cctx_create_value_identifer(CContext* cctx, const char* identifier);
 CExpr*    cctx_add_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
 CExpr*    cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
+CExpr*    cctx_call(CContext* cctx, const char* who, CJVec* args);
 
 void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* expr);
+void cctx_terminate_expr(CContext* cctx, CExpr* expr);
 
 JBuffer* cctx_get_output(CContext* ctx);
 void cctx_free(CContext* ctx);

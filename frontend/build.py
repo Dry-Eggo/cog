@@ -3,16 +3,15 @@ import subprocess
 
 from sys import argv as args
 
-TARGET = Path("../bin/kudo")
+TARGET = Path("../bin/cog")
 OUTDIR = Path("../bin/frontend")
 SRCDIR = Path("./source")
 INCDIR = Path("./source")
-SRCFILES = [f for f in SRCDIR.rglob("*.cpp")]
+SRCFILES = [f for f in SRCDIR.rglob("*.c")]
 OBJFILES = []
-FLAGS    = f"-I{INCDIR} -Wall -Wextra -pedantic -std=c++20"
+FLAGS    = f"-I{INCDIR} -Wall -Wextra -pedantic -std=c23"
 
-
-CXX = "clang++"
+CC = "clang"
 
 def build():
     for src in SRCFILES:
@@ -20,11 +19,11 @@ def build():
         objfile  = OUTDIR / (basename + ".o")
         OBJFILES.append(str(objfile))
 
-        command = f"{CXX} -c {str(src)} -o {objfile} {FLAGS}"
+        command = f"{CC} -c {str(src)} -o {objfile} {FLAGS}"
         print(f"Running: {command}")
         subprocess.run(command, shell=True)
 
-    command = f"{CXX} -o {TARGET} {" ".join(OBJFILES)}  {FLAGS}"
+    command = f"{CC} -o {TARGET} {" ".join(OBJFILES)}  {FLAGS}"
     print(f"Running: {command}")
     subprocess.run(command, shell=True)
 

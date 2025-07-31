@@ -23,12 +23,14 @@ typedef enum {
     CExprChar,
     CExprIdentifier,
     CExprBinaryOp,
+    CExprCall,
 } CExprKind;
 
 typedef enum {
     CStmtReturn,
     CStmtAssignVar,
     CStmtDeclareVar,
+    CStmtTerminatedExpr,
 } CStmtKind;
 
 typedef enum {
@@ -41,6 +43,7 @@ struct CStmt {
     union {
         struct { CExpr* expr; } return_stmt;
         struct { const char* name; CExpr* expr; CType* type; } assign;
+        struct { CExpr* expr; } terminated_expr;
     };
 };
 
@@ -53,6 +56,7 @@ struct CExpr {
         char char_expr;
         bool bool_expr;
         struct { CExpr* lhs; CExpr* rhs; CBinaryOp op; } binop;
+        struct { const char* name; CJVec* args; } call;
     };
 };
 
@@ -254,6 +258,15 @@ CExpr* cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs) {
     return expr;
 }
 
+CExpr* cctx_call(CContext* cctx, const char* who, CJVec* args) {
+    CExpr* expr = CCTX_ALLOC(cctx, CExpr);
+    expr->kind  = CExprCall;
+    expr->call.name = who;
+    expr->call.args = args;
+    return expr;
+    
+}
+
 void cctx_add_stmt(CContext* cctx, CStmt* stmt) {
     if (cctx->current_block) cjvec_push(cctx->current_block->statements, (void*)stmt);
     else UNREACHABLE;
@@ -267,6 +280,13 @@ void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* exp
     stmt->assign.type = type;
 
     cctx_add_stmt(cctx, stmt);
+}
+
+void cctx_terminate_expr(CContext* cctx, CExpr* expr) {
+    CStmt* stmt = CCTX_ALLOC(cctx, CStmt);
+    stmt->kind = CStmtTerminatedExpr;
+    stmt->terminated_expr.expr = expr;
+    cctx_add_stmt(cctx, stmt);    
 }
 
 const char* cctx_type_to_str(CContext* cctx, CType* type) {
@@ -303,6 +323,17 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
         jb_free(jb);
         return string;
     }
+    case CExprCall: {        
+        CJBuffer* tmp = cjb_create(cctx->arena);
+        cjb_appendf(tmp, "%s(", expr->call.name);
+        FOREACH(CExpr*, arg, i, expr->call.args) {
+            cjb_appendf(tmp, "%s", cctx_walk_expr(cctx, arg));
+            if (i == cjvec_len(expr->call.args) - 1) break;
+            cjb_append(tmp, ", ");
+        }
+        cjb_append(tmp, ")");
+        return cjb_str(tmp);
+    }
     case CExprBinaryOp: {
         JBuffer* jb = jb_create();
 
@@ -329,11 +360,13 @@ void cctx_walk_stmt(CContext* cctx, CStmt* stmt) {
         const char* type_str = cctx_type_to_str(cctx, stmt->assign.type);
         const char* expr_str = cctx_walk_expr(cctx, stmt->assign.expr);
         jb_appendf_a(cctx->body, cctx->arena, "%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
+    } else if (stmt->kind == CStmtTerminatedExpr) {
+        jb_appendf_a(cctx->body, cctx->arena, "%s%s;\n", jtab_to_str(&cctx->tab_tracker), cctx_walk_expr(cctx, stmt->terminated_expr.expr));
     }
 }
 
 void cctx_walk_block(CContext* cctx, CBlock* block) {
-    jtab_add_level(&cctx->tab_tracker);
+    jtab_add_level(&cctx->tab_tracker);    
     FOREACH(CStmt*, stmt, i, block->statements) {
         cctx_walk_stmt(cctx, stmt);
     }
@@ -342,7 +375,6 @@ void cctx_walk_block(CContext* cctx, CBlock* block) {
 
 const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
     JBuffer* tmp = jb_create();
-
     FOREACH(CParam*, param, i, params) {
         const char* name = param->name;
         const char* type = cctx_type_to_str(cctx, param->type);
@@ -358,7 +390,7 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
     const char* name = func->name;
     const char* type_str = cctx_type_to_str(cctx, func->type);
 
-    jb_appendf_a(cctx->body, cctx->arena, "%s %s %s (%s%s", (func->is_extern) ? "extern" : "", type_str, name,
+    jb_appendf_a(cctx->body, cctx->arena, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
     cctx_walk_parameters(cctx, func->params), func->is_variadic ? ", ...)" : ")");
     if (func->return_value) {
         TODO("implement return values");

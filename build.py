@@ -19,8 +19,8 @@ OUTDIR = Path("bin")
 JUVE   = "libjuve.a"
 LIBJUVE = Path(f"bin/{JUVE}")
 OBJECTS = []
-FLAGS = "-Wall -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -ggdb"
-TARGET = Path("bin/kudoc")
+FLAGS = f"-I{str(INCDIR)} -I{str(SRCDIR)} -I. -Wall -Wextra -pedantic -Wno-gnu-zero-variadic-macro-arguments -ggdb"
+TARGET = Path("bin/cogc")
 
 
 BUILD_ALL = False
@@ -29,15 +29,26 @@ def build_juve():
     for src in JUVESRC:
         obj_file = OUTDIR / (src.stem + ".o")
         OBJECTS.append(str(obj_file))
-        if (src.stat().st_mtime > obj_file.stat().st_mtime) or BUILD_ALL:
-            if (src.suffix == ".c"):            
-                command = [CC, "-c", str(src), "-o", str(obj_file), f"-I{str(INCDIR)}", f"-I{str(SRCDIR)}", "-I."]
-                print(f"Running: {" ".join(command)}")
-                subprocess.run(command)
-            elif (src.suffix == ".cpp"):
-                command = [CXX, "-c", str(src), "-o", str(obj_file), f"-I{str(INCDIR)}", f"-I{str(SRCDIR)}", "-I."]
-                print(f"Running: {" ".join(command)}")
-                subprocess.run(command)                
+        try:
+            if (src.stat().st_mtime > obj_file.stat().st_mtime) or BUILD_ALL:
+                if (src.suffix == ".c"):            
+                    command = f"{CC} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+                elif (src.suffix == ".cpp"):
+                    command = f"{CXX} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+        except FileNotFoundError:
+                if (src.suffix == ".c"):            
+                    command = f"{CC} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+                elif (src.suffix == ".cpp"):
+                    command = f"{CXX} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+                    
     if (src.stat().st_mtime > obj_file.stat().st_mtime) or BUILD_ALL:
         command = f"ar -rcs {str(LIBJUVE)} {" ".join(OBJECTS)}"
         print(f"Building {LIBJUVE}")
@@ -48,25 +59,48 @@ def build_obj_files():
         basename = src.stem
         obj_file = OUTDIR / (src.stem + ".o")
         OBJECTS.append(str(obj_file))
-        if BUILD_ALL or (src.stat().st_mtime > obj_file.stat().st_mtime):
-            if (src.suffix == ".c"):            
-                command =  [CC, "-c" , str(src), "-o", str(obj_file), f"-I{str(INCDIR)}", f"-I{str(SRCDIR)}", "-I."];
-                subprocess.run(command)
-                print(f"Running: {" ".join(command)}")                
-            elif (src.suffix == ".cpp"):
-                command =  [CXX, "-c" , str(src), "-o", str(obj_file), f"-I{str(INCDIR)}", f"-I{str(SRCDIR)}", "-I."];
-                subprocess.run(command)
-                print(f"Running: {command}")                
+        try:
+            if BUILD_ALL or (src.stat().st_mtime > obj_file.stat().st_mtime):
+                if (src.suffix == ".c"):            
+                    command = f"{CC} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+                elif (src.suffix == ".cpp"):
+                    command = f"{CXX} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+        except FileNotFoundError:
+                if (src.suffix == ".c"):            
+                    command = f"{CC} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
+                elif (src.suffix == ".cpp"):
+                    command = f"{CXX} -c {str(src)} -o {str(obj_file)} {FLAGS}"
+                    print(f"{command}")
+                    subprocess.run(command, shell=True)
 def build():
-
-    if (len(args) > 1 and args[1] == "all"):
-        global BUILD_ALL
-        BUILD_ALL = True
+    if (len(args) > 1):
+        if (args[1] == "all"):
+            global BUILD_ALL
+            BUILD_ALL = True
+        elif (args[1] == "test"):
+            testpath  = Path("tests")
+            testfiles = [f for f in testpath.rglob("*.cg")]
+            for test in testfiles:
+                basename = test.stem
+                result   = testpath / Path("out") / (basename + ".test")
+                valgrind = testpath / Path("out") / (basename + ".vlgrind")
+                command  = f"{TARGET} {str(test)} --test > {str(result)} 2>&1"
+                subprocess.run(command, shell=True)
+                
+                command  = f"valgrind --log-file={valgrind} {TARGET} {str(test)}"
+                print(command)
+                subprocess.run(command, shell=True)
         
     build_juve()
     build_obj_files()
 
-    command = f"{CXX} {" ".join(OBJECTS)} -o {TARGET} {FLAGS} -I{str(INCDIR)} -I{str(SRCDIR)} -I."
+    command = f"{CXX} {" ".join(OBJECTS)} -o {TARGET} {FLAGS} -I{str(INCDIR)} -I{str(SRCDIR)} -I. {FLAGS}"
     print(f"Building {TARGET}")
     subprocess.run(command, shell=True)
     

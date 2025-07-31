@@ -40,3 +40,12 @@ Expr* expr_make_cstring(const char* value, Span span) {
     expr->span = span;
     return expr;            
 }
+
+Expr* expr_make_call(Expr* callee, CJVec* args, Span span) {
+    Expr* expr = ALLOC(Expr);
+    expr->kind = expr_funccall_k;
+    expr->data.call_expr.callee = callee;
+    expr->data.call_expr.args = args;
+    expr->span = span;
+    return expr;                
+}

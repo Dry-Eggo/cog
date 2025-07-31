@@ -40,19 +40,19 @@ typedef enum {
     token_div_k,
     
     token_eof_k,
-} token_kind_t;
+} TokenKind;
 
 typedef enum {
     var_decl_ident,
     var_decl_pattern
-} var_decl_kind_t;
+} VarDeclKind;
 
 typedef enum {
     literal_int_k,
     literal_bool_k,
     literal_float_k,
     literal_str_k,
-} literal_kind_t;
+} LiteralKind;
 
 typedef enum {
     expr_binop_k,
@@ -63,7 +63,7 @@ typedef enum {
     expr_funccall_k,
     expr_compound_stmt_k,
     expr_error,
-} expr_kind_t;
+} ExprKind;
 
 typedef enum {
     item_function_k,
@@ -72,14 +72,14 @@ typedef enum {
     item_record_def_k,
     item_import_k,
     item_module_k,
-} item_kind_t;
+} ItemKind;
 
 typedef enum {
     stmt_function_k,
     stmt_vardecl_k,
     stmt_expr_k,
     stmt_assign_k,
-} stmt_kind_t;
+} StmtKind;
 
 typedef enum {
     color_reset_k,
@@ -88,4 +88,4 @@ typedef enum {
     color_yello_k,
     color_blue_k,
     color_count_k
-} color_t;
+} Color;

@@ -1,8 +1,9 @@
-Kudo: Error: (5:18): symbol 'age3' was not declared in this scope
-    ----> tests/undeclared_var.kd
+Cog: Error: (5:18): symbol 'age3' was not declared in this scope
+    ----> tests/undeclared_var.cg
        |
      4 |     let age := 40;
      5 |     let age2 := age3;
        |                 ^~~~ 
 
-Kudo: compilation aborted
+cog: 1 semantic errors occurred
+Cog: compilation aborted

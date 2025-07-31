@@ -37,6 +37,7 @@ Expr*  parse_equality(Parser* parser);
 Expr*  parse_conditional(Parser* parser);
 Expr*  parse_additive(Parser* parser);
 Expr*  parse_term(Parser* parser);
+Expr* parse_postifix(Parser* parser);
 Expr*  parse_atom(Parser* parser);
 
 Stmt*  parse_stmt(Parser* parser);
@@ -44,10 +45,10 @@ Stmt*  parse_stmt(Parser* parser);
 TypeInfo* parse_type(Parser* parser);
 
 void     parser_advance(Parser* parser);
-bool match(Parser* parser, token_kind_t k);
+bool match(Parser* parser, TokenKind k);
 void recover(Parser* parser);
-void recover_until(Parser* parser, token_kind_t k);
-bool expect(Parser* parser, token_kind_t k);
+void recover_until(Parser* parser, TokenKind k);
+bool expect(Parser* parser, TokenKind k);
 void add_error(Parser* parser, SyntaxError* error);
 
 void recover(Parser* parser) {
@@ -60,7 +61,7 @@ void add_error(Parser* parser, SyntaxError* error) {
     cjvec_push(parser->errors, (void*)error);
 }
 
-bool expect(Parser* parser, token_kind_t k) {
+bool expect(Parser* parser, TokenKind k) {
     if (match(parser, k)) {
 	    parser_advance(parser);
 	    return true;
@@ -68,7 +69,7 @@ bool expect(Parser* parser, token_kind_t k) {
     return false;
 }
 
-void recover_until(Parser* parser, token_kind_t k) {
+void recover_until(Parser* parser, TokenKind k) {
     while (!match(parser, token_eof_k) && !match(parser, k)) {
 	    parser_advance(parser);
     }
@@ -78,7 +79,7 @@ void parser_advance(Parser* parser) {
     parser->cursor++;
 }
 
-bool match(Parser* parser, token_kind_t k) {
+bool match(Parser* parser, TokenKind k) {
     return (parser_now(parser)->kind == k);
 }
 
@@ -255,6 +256,17 @@ Stmt* parse_stmt(Parser* parser) {
             err_semi(parser);
         }
         return stmt_make_vardecl(vardecl, span_merge(start, end));
+    } else {
+        // Try to parse an expr
+        Span* start = get_pspan(parser);        
+        Expr* expr  = parse_expr(parser);
+        Span* end   = get_pspan(parser);
+
+        if (!expect(parser, token_semi_k)) {
+            err_semi(parser);
+        }
+        
+        return stmt_make_expr(expr, span_merge(start, end));
     }
     TODO("Parser::parse_stmt: '%s'", parser_now(parser)->text);
     return stmt;
@@ -314,12 +326,36 @@ Expr*  parse_additive(Parser* parser) {
     return lhs;
 }
 
-Expr*  parse_term(Parser* parser) {
-    Expr* lhs = parse_atom(parser);
+Expr* parse_term(Parser* parser) {
+    Expr* lhs = parse_postifix(parser);
     return lhs;
 }
 
-Expr*  parse_atom(Parser* parser) {
+Expr* parse_postifix(Parser* parser) {
+    Span* start = get_pspan(parser);
+    Expr* base  = parse_atom(parser);    
+    
+    while (1) {
+        if (match(parser, token_oparen_k)) {
+            parser_advance(parser);
+            CJVec* args = cjvec_new(global_arena);
+            while (!match(parser, token_cparen_k)) {
+                Expr* arg = parse_expr(parser);
+                cjvec_push(args, (void*)arg);
+                if (match(parser, token_comma_k)) parser_advance(parser);
+            }
+            Span* end = get_pspan(parser);
+            parser_advance(parser);
+            base = expr_make_call(base, args, span_merge(start, end));
+        } else {
+            break;
+        }
+    }
+    
+    return base;
+}
+
+Expr* parse_atom(Parser* parser) {
     Expr* expr = NULL;
     if (match(parser, token_obrace_k)) {
 	    parser_advance(parser);

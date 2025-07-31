@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     CompileOptions compile_options = {0};    
     parse_args(&compile_options, argc, argv);
 
-    kudo_compile(&compile_options);
+    cog_compile(&compile_options);
     
     jarena_free(global_arena);
     return 0;

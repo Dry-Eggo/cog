@@ -14,11 +14,11 @@ typedef struct {
 } Span;
 
 typedef struct {
-    token_kind_t kind;
+    TokenKind kind;
     const char* text;
     Span* span;
 } Token;
 
 Span* span_new(size_t line, size_t col, size_t off, const char* filename);
 Span span_merge(Span*, Span*);
-Token* token_new(Span* span, token_kind_t kind, const char* text);
+Token* token_new(Span* span, TokenKind kind, const char* text);

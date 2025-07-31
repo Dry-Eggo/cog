@@ -12,4 +12,4 @@ typedef struct {
 
 
 void cm_init(ColorManager* cm);
-const char* get_color(ColorManager* cm, color_t c);
+const char* get_color(ColorManager* cm, Color c);
