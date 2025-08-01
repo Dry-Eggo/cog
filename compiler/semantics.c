@@ -41,8 +41,8 @@ ExprResult eresult_new(CExpr* e, TypeInfo* ty) {
 void add_type(Semantics* sema, const char* name, TypeInfo* type);
 
 void initialize_builtin_types(Semantics* sema) {
-    add_type(sema, "int",  type_new(type_int_k,     "int",  "kudo_int"));
-    add_type(sema, "cstr", type_new(type_cstring_k, "cstr", "kudo_cstr"));
+    add_type(sema, "int",  type_new(type_int_k,     "int",  "cog_int"));
+    add_type(sema, "cstr", type_new(type_cstring_k, "cstr", "cog_cstr"));
     add_type(sema, "none", type_new(type_none_k,    "none", "void"));
 }
 
