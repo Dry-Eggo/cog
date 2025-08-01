@@ -1,3 +1,3 @@
 #include "/home/dry/programming/c/cog/runtime/cog.h"
 
-extern kudo_int printf (kudo_cstr fmt, ...); // printf
+extern cog_int printf (cog_cstr fmt, ...); // printf
