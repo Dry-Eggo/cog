@@ -76,12 +76,12 @@ struct CBlock {
 };
 
 struct CContext {
-    JBuffer* includes; // includes
-    JBuffer* header;   // foward_decl    
-    JBuffer* body;     // main code
+    CJBuffer* includes; // includes
+    CJBuffer* header;   // foward_decl    
+    CJBuffer* body;     // main code
 
     bool     output_built;
-    JBuffer* final_output;
+    CJBuffer* final_output;
     
     CBlock*  current_block;
     
@@ -111,9 +111,9 @@ struct CFunction {
 
 CContext* cctx_new(JArena* arena) {
     CContext* ctx = ALLOC(CContext);
-    ctx->includes = jb_create();
-    ctx->header   = jb_create();
-    ctx->body     = jb_create();
+    ctx->includes = cjb_create(arena);
+    ctx->header   = cjb_create(arena);
+    ctx->body     = cjb_create(arena);
 
     ctx->items = cjvec_new(global_arena);
     
@@ -327,9 +327,9 @@ void cctx_walk_stmt(CContext* cctx, CStmt* stmt) {
         const char* name = stmt->assign.name;
         const char* type_str = stmt->assign.type;
         const char* expr_str = cctx_walk_expr(cctx, stmt->assign.expr);
-        jb_appendf_a(cctx->body, cctx->arena, "%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
+        cjb_appendf(cctx->body,"%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
     } else if (stmt->kind == CStmtTerminatedExpr) {
-        jb_appendf_a(cctx->body, cctx->arena, "%s%s;\n", jtab_to_str(&cctx->tab_tracker), cctx_walk_expr(cctx, stmt->terminated_expr.expr));
+        cjb_appendf(cctx->body, "%s%s;\n", jtab_to_str(&cctx->tab_tracker), cctx_walk_expr(cctx, stmt->terminated_expr.expr));
     }
 }
 
@@ -359,7 +359,7 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
     const char* name     = func->name;
     const char* type_str = func->type;
 
-    jb_appendf_a(cctx->body, cctx->arena, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
+    cjb_appendf(cctx->body, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
     cctx_walk_parameters(cctx, func->params), func->is_variadic ? ", ...)" : ")");
     if (func->return_value) {
         TODO("implement return values");
@@ -367,15 +367,15 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
 
     if (func->has_definition) {
         // generate the body
-        jb_appendf_a(cctx->body, cctx->arena, "\n{\n");
+        cjb_appendf(cctx->body, "\n{\n");
         if (func->block) {
             cctx_walk_block(cctx, func->block);
         }
-        jb_appendf_a(cctx->body, cctx->arena, "}");
+        cjb_appendf(cctx->body, "}");
     } else {
-        jb_appendf_a(cctx->body, cctx->arena, ";");        
+        cjb_appendf(cctx->body, ";");        
     }
-    jb_appendf_a(cctx->body, cctx->arena, " // %s\n", name);
+    cjb_appendf(cctx->body, " // %s\n", name);
 }
 
 void cctx_walk_items(CContext* cctx) {
@@ -385,25 +385,25 @@ void cctx_walk_items(CContext* cctx) {
         } else if (item->kind == CItemInclude) {
             CInclude* include = (CInclude*)item->data;
             if (include->is_system) {
-                jb_appendf_a(cctx->includes, cctx->arena, "#include <%s>\n", include->path);
-            } else jb_appendf_a(cctx->includes, cctx->arena, "#include \"%s\"\n", include->path);
+                cjb_appendf(cctx->includes, "#include <%s>\n", include->path);
+            } else cjb_appendf(cctx->includes, "#include \"%s\"\n", include->path);
         }
     }
 }
 
 
-JBuffer* cctx_get_output(CContext* cctx) {
+CJBuffer* cctx_get_output(CContext* cctx) {
     if (!cctx->output_built) {
-        cctx->final_output = jb_create();
+        cctx->final_output = cjb_create(cctx->arena);
         cctx_walk_items(cctx);
         
-        const char* includes = jb_len(cctx->includes) == 0 ? NULL : jb_str_a(cctx->includes, cctx->arena);
-        const char* header   = jb_len(cctx->header)   == 0 ? NULL : jb_str_a(cctx->header, cctx->arena);
-        const char* body     = jb_len(cctx->body)     == 0 ? NULL : jb_str_a(cctx->body, cctx->arena);
+        const char* includes = cjb_len(cctx->includes) == 0 ? NULL : cjb_str(cctx->includes);
+        const char* header   = cjb_len(cctx->header)   == 0 ? NULL : cjb_str(cctx->header);
+        const char* body     = cjb_len(cctx->body)     == 0 ? NULL : cjb_str(cctx->body);
         
-        if (includes) jb_appendf_a(cctx->final_output, cctx->arena, "%s\n", includes);
-        if (header) jb_appendf_a(cctx->final_output, cctx->arena, "%s\n", header);
-        if (body) jb_appendf_a(cctx->final_output, cctx->arena, "%s", body);
+        if (includes) cjb_appendf(cctx->final_output, "%s\n", includes);
+        if (header) cjb_appendf(cctx->final_output, "%s\n", header);
+        if (body) cjb_appendf(cctx->final_output, "%s", body);
         cctx->output_built = true;
     }    
     
@@ -411,9 +411,7 @@ JBuffer* cctx_get_output(CContext* cctx) {
 }
 
 void cctx_free(CContext* cctx) {
-    jb_free(cctx->includes);
-    jb_free(cctx->header);
-    jb_free(cctx->body);
-    
-    if (cctx->output_built) jb_free(cctx->final_output);
+    UNUSED(cctx);
+    // no op
+    // structure  lives on the arena
 }

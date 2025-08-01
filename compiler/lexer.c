@@ -53,42 +53,41 @@ char lexer_advance(Lexer* lexer) {
 }
 
 Token* lexer_parse_name(Lexer* lexer) {
-    JBuffer* buffer = jb_create();
+    CJBuffer* buffer = cjb_create(global_arena);
     size_t sl = lexer->line;
     size_t sc = lexer->column;
     
     while (lexer_now(lexer) != EOF && (isalnum(lexer_now(lexer)) || lexer_now(lexer) == '_')) {
-	    jb_appendf_a(buffer, global_arena, "%c", lexer_advance(lexer));
+	    cjb_appendf(buffer, "%c", lexer_advance(lexer));
     }
     TokenKind kind = token_ident_k;
     const char* text  = NULL;
-    if (jb_eq(buffer, "func")) {
+    if (cjb_eq(buffer, "func")) {
 	    kind = token_func_k;
 	    text = "func";
-    } else if (jb_eq(buffer, "extern")) {
+    } else if (cjb_eq(buffer, "extern")) {
 	    kind = token_extern_k;
 	    text = "extern";
-    } else if (jb_eq(buffer, "let")) {
+    } else if (cjb_eq(buffer, "let")) {
 	    kind = token_let_k;
 	    text = "let";
-    } else if (jb_eq(buffer, "var")) {
+    } else if (cjb_eq(buffer, "var")) {
 	    kind = token_var_k;
 	    text = "var";
-    } else if (jb_eq(buffer, "int")) {
+    } else if (cjb_eq(buffer, "int")) {
         kind = token_int_k;
         text = "int";
-    } else if (jb_eq(buffer, "none")) {
+    } else if (cjb_eq(buffer, "none")) {
         kind = token_none_k;
         text = "none";
-    } else if (jb_eq(buffer, "cstr")) {
+    } else if (cjb_eq(buffer, "cstr")) {
         kind = token_cstr_k;
         text = "cstr";
     } else {
-	    text = jb_str_a(buffer, global_arena);
+	    text = cjb_str(buffer);
     }
     Span* span = span_new(sl, sc, lexer->column-1, lexer->source_path);
     Token* tok = token_new(span, kind, jarena_strdup(global_arena, (char*)text));
-    jb_free(buffer);
     return tok;
 }
 

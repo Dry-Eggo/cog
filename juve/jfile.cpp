@@ -8,7 +8,7 @@
 
 namespace fs = std::filesystem;
 
-size_t jb_read_entire_file(const char* path, JBuffer* jb) {
+size_t jb_read_entire_file(const char* path, CJBuffer* jb) {
     std::fstream file(path);
 
     if (!file.is_open()) return -1;
@@ -16,7 +16,7 @@ size_t jb_read_entire_file(const char* path, JBuffer* jb) {
     std::stringstream ss;
     ss << file.rdbuf();
     std::string content = ss.str();
-    jb_append(jb, content.c_str());
+    cjb_append(jb, content.c_str());
     return ss.str().size();
 }
 

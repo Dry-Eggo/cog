@@ -49,7 +49,8 @@ void     jarena_reset(JArena*);
 char*    jarena_strdup(JArena*, char*);
 
 // file utils
-size_t      jb_read_entire_file(const char*, JBuffer*);
+typedef struct CJBuffer CJBuffer;
+size_t      jb_read_entire_file(const char*, CJBuffer*);
 bool        jfile_write(const char*, const char*);
 char*       jfile_stem(const char*, JArena*);
 char*       jfile_ext(const char*, JArena*);
@@ -59,7 +60,6 @@ bool        jfile_exists(const char*);
 long        jfile_size(const char*);
 
 // containers
-typedef struct JMap JMap;
 typedef struct JVec JVec;
 JVec*       jvec_new(void);
 JVec*       jvec_lines(const char* source, JArena*);
@@ -68,12 +68,6 @@ size_t      jvec_len(JVec*);
 void*       jvec_at(JVec*, size_t);
 void*       jvec_back(JVec*);
 void        jvec_free(JVec*);
-
-JMap*       jmap_new(void);
-void        jmap_put(JMap*, const char*, void*);
-int         jmap_has(JMap*, const char*);
-void*       jmap_get(JMap*, const char*);
-void        jmap_free(JMap*);
 
 //==------------------- Pure Implemntation -------------------===
 
@@ -104,6 +98,7 @@ CJMap*      cjmap_create(JArena* arena);
 bool        cjmap_put(CJMap* map, const char* key, void* value);
 bool        cjmap_has(CJMap* map, const char* key);
 void*       cjmap_get(CJMap* map, const char* key);
+bool        cjmap_remove(CJMap* map, const char* key);
 
 typedef enum {
     JCMD_LOG,

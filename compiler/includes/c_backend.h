@@ -41,6 +41,6 @@ CExpr*    cctx_call(CContext* cctx, const char* who, CJVec* args);
 void cctx_assign_value(CContext* cctx, const char* type, const char* name, CExpr* expr);
 void cctx_terminate_expr(CContext* cctx, CExpr* expr);
 
-JBuffer* cctx_get_output(CContext* ctx);
+CJBuffer* cctx_get_output(CContext* ctx);
 void cctx_free(CContext* ctx);
 

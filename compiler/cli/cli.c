@@ -145,7 +145,7 @@ void parse_args(CompileOptions* opts, int argc, char** argv) {
             parse_long_flags(opts, &i, argc, argv);
         } else if (arg[0] != '-') {
             if (opts->input_file) {
-                fprintf(stderr, "Kudo Note: '%s' was ignored\n", arg);
+                fprintf(stderr, "Cog Note: '%s' was ignored\n", arg);
                 continue;
             } else {
                 opts->input_file = arg;

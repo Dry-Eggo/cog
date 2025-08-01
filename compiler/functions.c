@@ -32,6 +32,8 @@ ParamInfo* get_param_info(FunctionInfo* finfo, size_t i) {
     return cjvec_at(finfo->params, i);
 }
 
+TypeInfo* get_function_type(FunctionInfo* finfo) { return finfo->return_type; }
+
 FunctionInfo* func_info_new(Span span, const char* name, const char* linkage_name, const char* mangled_name, bool variadic, CJVec* params, TypeInfo* type) {
     FunctionInfo* finfo = ALLOC(FunctionInfo);
     finfo->name = name;

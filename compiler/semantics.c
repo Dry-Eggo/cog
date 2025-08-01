@@ -93,6 +93,9 @@ bool      type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2);
 
 void add_diagnostic(Semantics* sema, SemaError* err);
 
+void enter_new_context(Semantics* sema);
+void leave_context(Semantics* sema);
+
 void add_diagnostic(Semantics* sema, SemaError* err) {
     cjvec_push(sema->diagnostics, (void*)err);
 }
@@ -109,6 +112,19 @@ void add_func(Semantics* sema, FunctionDef func, Span span) {
     FunctionInfo* finfo = func_info_new(span, func.name, func.linkage_name, func.name, func.is_variadic, params, func.return_type);
     context_add_function(sema->current_context, func.name, (void*)finfo);
     register_sym(sema, func.name, syminfo_new(func.name, func.name_span, func.return_type, sym_function_k));
+}
+
+void enter_new_context(Semantics* sema) {
+    Context* new_ctx = create_new_context(sema->current_context);
+    sema->current_context = new_ctx;
+}
+
+void leave_context(Semantics* sema) {
+    Context* prev_ctx = sema->current_context;
+    if (get_context_parent(prev_ctx) != NULL) {
+        sema->current_context = get_context_parent(prev_ctx);
+    }
+    else sema->current_context = sema->root;
 }
 
 void add_type(Semantics* sema, const char* name, TypeInfo* type) {
@@ -163,10 +179,6 @@ void check_function(Semantics* sema, Item* item) {
     const char* functype = type_get_repr(final_ty);    
     CFunction* func = NULL;
 
-    for (size_t i = 0; i < funcdef.params.count; ++i) {
-        ParamDef pdef = funcdef.params.items[i];
-        register_sym(sema, pdef.name, syminfo_new(pdef.name, pdef.span, check_type(sema, pdef.type), sym_variable_k));
-    }
     CJVec* params = sema_convert_param(sema, funcdef.params);
     
     if (funcdef.is_decl) {
@@ -174,7 +186,18 @@ void check_function(Semantics* sema, Item* item) {
     }
     else {
         func =  cctx_create_function(sema->cctx, funcdef.name, params, functype, true);
-        check_expr(sema, funcdef.body);
+        enter_new_context(sema);
+        for (size_t i = 0; i < funcdef.params.count; ++i) {
+            ParamDef pdef = funcdef.params.items[i];
+            register_sym(sema, pdef.name, syminfo_new(pdef.name, pdef.span, check_type(sema, pdef.type), sym_variable_k));
+        }
+        
+        ExprResult body_expr = check_expr(sema, funcdef.body);
+        if (funcdef.body->kind != expr_compound_stmt_k) {
+            cctx_terminate_expr(sema->cctx, body_expr.expr);
+        }
+        
+        leave_context(sema);
     }
     
     if (funcdef.is_extern) cctx_function_set_extern(sema->cctx, func);
@@ -277,7 +300,9 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         switch (call.callee->kind) {
         case expr_ident_k: {
             ExprResult ident_res = check_expr(sema, call.callee);
-            UNUSED(ident_res);
+            if (!ident_res.expr) {
+                return eresult_new(NULL, get_type_info(sema, "int"));
+            }
             func_name = call.callee->data.literal.lit.str_value;
             SymInfo* info = get_syminfo(sema, func_name);
             if (sym_type(info) != sym_function_k) {
@@ -316,7 +341,7 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
             }            
             cjvec_push(args, (void*)arg_res.expr);
         }
-        return eresult_new(cctx_call(sema->cctx, func_name, args), get_type_info(sema, "int"));
+        return eresult_new(cctx_call(sema->cctx, func_name, args), get_function_type(finfo));
     } break;
     case expr_binop_k: {
         BinaryOpExpr binop = expr->data.binop;

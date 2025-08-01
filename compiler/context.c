@@ -32,39 +32,57 @@ Context* get_context_parent(Context* context) {
 bool context_has_sym(Context* context, const char* name) {
     if (!context || !name) return false;
     if (!context->symbols) return false;
-    return cjmap_has(context->symbols, name);
+    if (cjmap_has(context->symbols, name)) return true;
+
+    if (context->parent) return context_has_sym(context->parent, name);
+    return false;
 }
 
 SymInfo* context_get_sym(Context* context, const char* name) {
     if (!context || !name)               return NULL;
     if (!context->symbols)               return NULL;
-    if (!context_has_sym(context, name)) return NULL;
+    if (!cjmap_has(context->symbols, name)) {
+        if (context->parent) return context_get_sym(context->parent, name);
+        return NULL;
+    }
     return cjmap_get(context->symbols, name);
 }
 
 bool context_has_function(Context* context, const char* name) {
     if (!context || !name)   return false;
     if (!context->functions) return false;
-    return cjmap_has(context->functions, name);    
+    if (cjmap_has(context->functions, name)) return true;
+
+    if (context->parent) return context_has_function(context->parent, name);
+    return false;
 }
 
 FunctionInfo* context_get_function(Context* context, const char* name) {
     if (!context || !name)                    return NULL;
     if (!context->functions)                  return NULL;
-    if (!context_has_function(context, name)) return NULL;
+    if (!cjmap_has(context->functions, name)) {
+        if (context->parent) return context_get_function(context->parent, name);
+        return NULL;
+    }
     return cjmap_get(context->functions, name);    
 }
 
 bool context_has_type(Context* context, const char* name) {
     if (!context || !name)   return false;
     if (!context->types)     return false;
-    return cjmap_has(context->types, name);    
+    if (cjmap_has(context->types, name)) return true;
+
+    if (context->parent) return context_has_type(context->parent, name);
+    return false;
 }
 
 TypeInfo* context_get_type(Context* context, const char* name) {
     if (!context || !name)                    return NULL;
     if (!context->types)                      return NULL;
-    if (!context_has_type(context, name))     return NULL;
+    if (!cjmap_has(context->types, name)) {
+        if (context->parent) return context_get_type(context->parent, name);
+        return NULL;
+    }
     return cjmap_get(context->types, name);        
 }
 

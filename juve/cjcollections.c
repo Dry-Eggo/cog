@@ -97,11 +97,14 @@ bool cjmap_put(CJMap* map, const char* key, void* value) {
     uint32_t index = chash(key) % MAX_BUCKETS;
 
     Bucket* current = map->buckets[index];
+    Bucket* prev    = NULL;
+    
     while (current) {
         if (strcmp(current->key, key) == 0) {
             current->value = value;
             return true;
         }
+        prev    = current;
         current = current->next;
     }
 
@@ -109,8 +112,8 @@ bool cjmap_put(CJMap* map, const char* key, void* value) {
     new_buck->key   = key;
     new_buck->value = value;
     new_buck->next  = NULL;
-    if (!current) map->buckets[index] = new_buck;
-    else map->buckets[index]->next = new_buck;
+    if (prev) prev->next = new_buck;
+    else map->buckets[index] = new_buck;
     return true;
 }
 
@@ -119,9 +122,24 @@ bool cjmap_has(CJMap* map, const char* key) {
     Bucket*  current = map->buckets[index];
     while (current) {
         if (strcmp(current->key, key) == 0) return true;
-        if (!current->next) break;
         current = current->next;
     }
+    return false;
+}
+
+bool cjmap_remove(CJMap* map, const char* key) {
+    uint32_t index = chash(key) % MAX_BUCKETS;
+    Bucket*  current = map->buckets[index];
+    while (current) {
+        if (strcmp(current->key, key) == 0) {
+            current = NULL;
+            // found the key
+            return true;
+        }
+        current = current->next;
+    }
+    
+    // we could not find the key
     return false;
 }
 

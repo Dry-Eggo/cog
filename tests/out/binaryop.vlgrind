@@ -1,15 +1,15 @@
-==6131== Memcheck, a memory error detector
-==6131== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
-==6131== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
-==6131== Command: bin/cogc tests/binaryop.cg
-==6131== Parent PID: 6130
-==6131== 
-==6131== 
-==6131== HEAP SUMMARY:
-==6131==     in use at exit: 0 bytes in 0 blocks
-==6131==   total heap usage: 236 allocs, 236 frees, 118,850 bytes allocated
-==6131== 
-==6131== All heap blocks were freed -- no leaks are possible
-==6131== 
-==6131== For lists of detected and suppressed errors, rerun with: -s
-==6131== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==13435== Memcheck, a memory error detector
+==13435== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==13435== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
+==13435== Command: bin/cogc tests/binaryop.cg
+==13435== Parent PID: 13434
+==13435== 
+==13435== 
+==13435== HEAP SUMMARY:
+==13435==     in use at exit: 0 bytes in 0 blocks
+==13435==   total heap usage: 247 allocs, 247 frees, 117,572 bytes allocated
+==13435== 
+==13435== All heap blocks were freed -- no leaks are possible
+==13435== 
+==13435== For lists of detected and suppressed errors, rerun with: -s
+==13435== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

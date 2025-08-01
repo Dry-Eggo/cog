@@ -30,12 +30,11 @@ Driver* driver_new(const char* source, CompileOptions* opts) {
 
 void driver_free(Driver* driver) {    
     jvec_free(driver->source_lines);
-    jb_free(driver->source_buffer);
     if (driver->phase >= phase_sema_k) sema_free(driver->sema);
 }
 
-void emit_file(CompileOptions* compile_options, JBuffer* compiled_file) {
-    const char* content = jb_str_a(compiled_file, global_arena);
+void emit_file(CompileOptions* compile_options, CJBuffer* compiled_file) {
+    const char* content = cjb_str(compiled_file);
     if (compile_options->test_mode) printf("%s", content);
     else {
         const char* filestem = jfile_stem(compile_options->input_file, global_arena);
@@ -70,10 +69,10 @@ void cog_compile(CompileOptions* compile_options) {
         abort_compilation(NULL);
     }
     
-    JBuffer* buffer = jb_create();
+    CJBuffer* buffer = cjb_create(global_arena);
     jb_read_entire_file(compile_options->input_file, buffer);
 
-    const char* source = jb_str_a(buffer, global_arena);
+    const char* source = cjb_str(buffer);
     
     Driver* driver = driver_new(source, compile_options);
     driver->source_buffer = buffer;
@@ -108,7 +107,7 @@ void cog_compile(CompileOptions* compile_options) {
     }
     
     driver->phase = phase_codegen_k;
-    JBuffer* compiled_file = cctx_get_output(sema_get_cctx(driver->sema));   
+    CJBuffer* compiled_file = cctx_get_output(sema_get_cctx(driver->sema));   
     emit_file(compile_options, compiled_file);
     
     driver_free(driver);

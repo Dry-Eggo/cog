@@ -16,3 +16,4 @@ FunctionInfo* func_info_new(Span span, const char* name, const char* linkage_nam
 size_t        func_info_get_arity(FunctionInfo* finfo);
 bool          is_variadic_function(FunctionInfo* finfo);
 ParamInfo*    get_param_info(FunctionInfo* finfo, size_t i);
+TypeInfo*     get_function_type(FunctionInfo* finfo);

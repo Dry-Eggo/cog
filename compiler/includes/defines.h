@@ -2,7 +2,7 @@
 
 #include <stdlib.h>
 
-#define LOG_ERR(msg, ...) fprintf(stderr, "Kudo Error: "msg, ##__VA_ARGS__)
+#define LOG_ERR(msg, ...) fprintf(stderr, "Cog Error: "msg, ##__VA_ARGS__)
 #define c(k) get_color(&global_color_manager, k)
 #define ALLOC(ty) (ty*)jarena_alloc(global_arena, sizeof(ty))
 #define UNUSED(var) (void)var

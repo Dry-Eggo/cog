@@ -200,6 +200,7 @@ Item* parse_function(Parser* parser) {
             recover_until(parser, token_eof_k);
         }        
     }
+    
     funcdef.return_type = return_type;
     if (match(parser, token_semi_k)) {
         funcdef.is_decl = true;
