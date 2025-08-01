@@ -1,6 +1,13 @@
-Cog: Error: (10:6): cannot pass 'int' to type 'cstr'
-    ----> tests/call.cg
-    10 |	foo(age);
-       |	    ^~~  
-cog: 1 semantic errors occurred
-Cog: compilation aborted
+#include "/home/dry/programming/c/cog/runtime/cog.h"
+
+extern kudo_int printf (kudo_cstr fmt, ...); // printf
+extern kudo_int strlen (kudo_cstr s); // strlen
+void foo ()
+{
+    printf("Hello World\n");
+} // foo
+kudo_int main ()
+{
+    kudo_int age = 30;
+    foo();
+} // main

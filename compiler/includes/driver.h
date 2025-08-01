@@ -21,7 +21,7 @@ typedef struct {
     CompilerPhase    phase;
 
     JVec*        source_lines;
-    JBuffer*     source_buffer;
+    JBuffer*    source_buffer;
     const char*        source;
     
     Lexer*           lexer;

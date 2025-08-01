@@ -351,6 +351,7 @@ const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
         jb_appendf_a(tmp, cctx->arena, ",");
     }
     const char* res = jb_str_a(tmp, cctx->arena);
+    jb_free(tmp);
     return res;
 }
 

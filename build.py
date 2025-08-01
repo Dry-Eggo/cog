@@ -93,7 +93,7 @@ def build():
                 command  = f"{TARGET} {str(test)} --test > {str(result)} 2>&1"
                 subprocess.run(command, shell=True)
                 
-                command  = f"valgrind --log-file={valgrind} {TARGET} {str(test)}"
+                command  = f"valgrind --log-file={valgrind} --leak-check=full {TARGET} {str(test)}"
                 print(command)
                 subprocess.run(command, shell=True)
         

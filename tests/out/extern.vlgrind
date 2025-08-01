@@ -1,21 +1,15 @@
-==10873== Memcheck, a memory error detector
-==10873== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
-==10873== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
-==10873== Command: bin/cogc tests/extern.cg
-==10873== Parent PID: 10872
-==10873== 
-==10873== 
-==10873== HEAP SUMMARY:
-==10873==     in use at exit: 392 bytes in 1 blocks
-==10873==   total heap usage: 191 allocs, 190 frees, 122,342 bytes allocated
-==10873== 
-==10873== LEAK SUMMARY:
-==10873==    definitely lost: 392 bytes in 1 blocks
-==10873==    indirectly lost: 0 bytes in 0 blocks
-==10873==      possibly lost: 0 bytes in 0 blocks
-==10873==    still reachable: 0 bytes in 0 blocks
-==10873==         suppressed: 0 bytes in 0 blocks
-==10873== Rerun with --leak-check=full to see details of leaked memory
-==10873== 
-==10873== For lists of detected and suppressed errors, rerun with: -s
-==10873== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+==6168== Memcheck, a memory error detector
+==6168== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==6168== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
+==6168== Command: bin/cogc tests/extern.cg
+==6168== Parent PID: 6167
+==6168== 
+==6168== 
+==6168== HEAP SUMMARY:
+==6168==     in use at exit: 0 bytes in 0 blocks
+==6168==   total heap usage: 191 allocs, 191 frees, 122,374 bytes allocated
+==6168== 
+==6168== All heap blocks were freed -- no leaks are possible
+==6168== 
+==6168== For lists of detected and suppressed errors, rerun with: -s
+==6168== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

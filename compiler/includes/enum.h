@@ -34,10 +34,25 @@ typedef enum {
     token_cvariadic_k,  // ...
 
     // operators
-    token_add_k,
-    token_sub_k,
-    token_mul_k,
-    token_div_k,
+    token_add_k,     // +
+    token_sub_k,     // -
+    token_mul_k,     // *
+    token_div_k,     // /
+    token_inc_k,     // ++
+    token_dec_k,     // --
+    token_mul_eq_k,  // *=
+    token_div_eq_k,  // /=
+    token_shl_k,     // <<
+    token_shr_k,     // >>
+    token_shl_eq_k,  // <<=
+    token_shr_eq_k,  // >>=
+    token_eqeq_k,    // ==
+    token_or_k,      // ||
+    token_bor_k,     // |
+    token_and_k,     // &&
+    token_band_k,    // &
+    token_and_eq_k,  // &=
+    token_oreq_k,    // |=
     
     token_eof_k,
 } TokenKind;

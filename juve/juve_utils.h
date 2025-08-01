@@ -99,6 +99,12 @@ void        cjb_clear(CJBuffer*);
 bool        cjb_eq(CJBuffer*, const char*);
 size_t      cjb_len(CJBuffer*);
 
+typedef struct CJMap CJMap;
+CJMap*      cjmap_create(JArena* arena);
+bool        cjmap_put(CJMap* map, const char* key, void* value);
+bool        cjmap_has(CJMap* map, const char* key);
+void*       cjmap_get(CJMap* map, const char* key);
+
 typedef enum {
     JCMD_LOG,
     JCMD_NOT_SET,
