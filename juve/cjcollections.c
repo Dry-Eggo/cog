@@ -85,7 +85,8 @@ uint32_t chash(const char* str) {
 }
 
 CJMap* cjmap_create(JArena* arena) {
-    CJMap* map = jarena_alloc(arena, sizeof(CJMap));
+    CJMap* map = jarena_zeroed(arena, sizeof(CJMap));
+    memset(map->buckets, 0, sizeof(map->buckets));
     map->arena = arena;
     return map;
 }
@@ -95,70 +96,41 @@ bool cjmap_put(CJMap* map, const char* key, void* value) {
     
     uint32_t index = chash(key) % MAX_BUCKETS;
 
-    if (!map->buckets[index]) {
-        map->buckets[index] = jarena_alloc(map->arena, sizeof(Bucket));
-        map->buckets[index]->key   = key;
-        map->buckets[index]->value = value;
-        map->buckets[index]->next  = NULL;
-        return true;
-    } else {
-        if (strcmp(map->buckets[index]->key, key) == 0) {
-            map->buckets[index]->value = value;
+    Bucket* current = map->buckets[index];
+    while (current) {
+        if (strcmp(current->key, key) == 0) {
+            current->value = value;
             return true;
-        } else {
-            Bucket* b = map->buckets[index]->next;
-            if (b) {
-                while (b) {
-                    if (strcmp(b->key, key) == 0) {
-                        b->value = value;
-                        return true;
-                    }
-                    b = b->next;
-                }
-            } else {
-                b = jarena_alloc(map->arena, sizeof(Bucket));
-                b->key   = key;
-                b->value = value;
-                b->next  = NULL;
-                return true;
-            }
         }
+        current = current->next;
     }
-    return false;
+
+    Bucket* new_buck = jarena_alloc(map->arena, sizeof(Bucket));
+    new_buck->key   = key;
+    new_buck->value = value;
+    new_buck->next  = NULL;
+    if (!current) map->buckets[index] = new_buck;
+    else map->buckets[index]->next = new_buck;
+    return true;
 }
 
 bool cjmap_has(CJMap* map, const char* key) {
     uint32_t index = chash(key) % MAX_BUCKETS;
-    if (map->buckets[index]) {
-        if (strcmp(map->buckets[index]->key, key) == 0) return true;
-        else {
-            Bucket* b = map->buckets[index]->next;
-            if (b) {
-                while (b) {
-                    if (strcmp(b->key, key) == 0) return true;
-                    b = b->next;
-                }
-            }
-            return false;
-        }
+    Bucket*  current = map->buckets[index];
+    while (current) {
+        if (strcmp(current->key, key) == 0) return true;
+        if (!current->next) break;
+        current = current->next;
     }
     return false;
 }
 
 void* cjmap_get(CJMap* map, const char* key) {
     uint32_t index = chash(key) % MAX_BUCKETS;
-    if (map->buckets[index]) {
-        if (strcmp(map->buckets[index]->key, key) == 0) return map->buckets[index]->value;
-        else {
-            Bucket* b = map->buckets[index]->next;
-            if (b) {
-                while (b) {
-                    if (strcmp(b->key, key) == 0) return b->value;
-                    b = b->next;
-                }
-            }
-            return NULL;
-        }
+    Bucket* current = map->buckets[index];
+    while (current) {
+        if (strcmp(current->key, key) == 0) return current->value;
+        current = current->next;
     }
-    return NULL;    
+    return NULL;
 }

@@ -381,6 +381,9 @@ TypeInfo*  check_type(Semantics* sema, TypeInfo* type) {
         if (type_get_kind(type) == type_cstring_k) {
             return get_type_info(sema, "cstr");
         }
+        if (type_get_kind(type) == type_none_k) {
+            return get_type_info(sema, "none");
+        }
     }
     TODO("Semantics::check_type: add more types");
     return NULL;
