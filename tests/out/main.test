@@ -1,4 +1,6 @@
-int main ()
+#include "/home/dry/programming/c/cog/runtime/cog.h"
+
+kudo_int main ()
 {
-    const char* name = "Dry";
+    kudo_cstr name = "Dry";
 } // main

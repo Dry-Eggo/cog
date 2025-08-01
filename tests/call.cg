@@ -1,7 +1,11 @@
 extern func printf(fmt: cstr, ...) -> int;
 extern func strlen(s: cstr) -> int;
 
-func main() {
-     	let age := 40;
-	printf(c"Hello World %d\n", strlen(c"Hello"));
+func foo() {
+     printf(c"Hello World\n");
+}
+
+func main() {     
+     let age := 30;
+     foo();
 }

@@ -17,6 +17,5 @@ Cog: Error: (5:18): symbol 'age' was not declared in this scope
      4 |     let age : int = 50 + name;
      5 |     let age2 := age;
        |                 ^~~ 
-
 cog: 3 semantic errors occurred
 Cog: compilation aborted

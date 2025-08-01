@@ -12,6 +12,7 @@ Span* span_new(size_t line, size_t col, size_t off, const char* filename) {
 
 Span span_merge(Span* start, Span* end) {   
     return (Span) {
+        .filename = start->filename,
         .line = start->line,
         .column = start->column,
         .offset = end->offset,

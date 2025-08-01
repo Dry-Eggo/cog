@@ -4,6 +4,5 @@ Cog: Type Error: (4:22): cannot implicitly convert from 'int' to 'cstr'
      3 |func main() {
      4 |     let age: cstr = 40;
        |                     ^~ 
-
 cog: 1 semantic errors occurred
 Cog: compilation aborted

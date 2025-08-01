@@ -56,8 +56,10 @@ void emit_file(CompileOptions* compile_options, JBuffer* compiled_file) {
         
         cmd_append(&cmd, "clang", "-o", compile_options->output_file, tmp_cfile, "-w");
         jcmd_one_shot(&cmd);
-        
-        cmd_append(&cmd, "rm", tmp_cfile);
+
+        if (!compile_options->emit_c) {
+            cmd_append(&cmd, "rm", tmp_cfile);
+        }
         jcmd_one_shot(&cmd);
     }
 }

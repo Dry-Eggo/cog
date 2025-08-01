@@ -63,8 +63,8 @@ SemaError*  make_generic_error(Span span, const char* message, const char* hint)
 void underline_span(Span span, const char* line) {
     int fc = 0;
     while (isspace(line[fc])) {
-	    fc++;
-	    fprintf(stderr, " ");
+	    fprintf(stderr, "%c", line[fc]);
+        fc++;
     }
     
     for (size_t i = fc; i < strlen(line); ++i) {
@@ -83,9 +83,10 @@ void underline_span(Span span, const char* line) {
 void underline_span2(Span span, Span span2, const char* line) {
     int fc = 0;
     while (isspace(line[fc])) {
+	    fprintf(stderr, "%c", line[fc]);
 	    fc++;
-	    fprintf(stderr, " ");
     }
+    
     size_t last = 0;
     for (last = fc; last < span.offset; ++last) {
 	    if (last >= span.column - 1 && last <= span.offset - 1) {
@@ -255,6 +256,6 @@ void sema_error_flush(CJVec* errors, JVec* source) {
         default:
             UNREACHABLE;
         }
-        fprintf(stderr, "\n");
+        if (i != cjvec_len(errors) - 1) fprintf(stderr, "\n");
     }
 }

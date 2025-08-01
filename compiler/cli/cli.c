@@ -102,12 +102,12 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
                 LOG_ERR("'--input' expected an argument\n");
                 exit(1);                
             } else {
-                opts->output_file = shift(i, argv);                
+                opts->input_file = shift(i, argv);                
                 return;
             }
         }
         if (*i < argc) {
-            opts->output_file = shift(i, argv);
+            opts->input_file = shift(i, argv);
         } else {
             print_usage(argv[0]);
             LOG_ERR("'--input' expected an argument\n");
@@ -117,6 +117,9 @@ void parse_long_flags(CompileOptions* opts, int* i, int argc, char** argv) {
 
     else if (strcmp(arg, "verbose") == 0) {
         opts->verbose_logging = true;
+    }
+    else if (strcmp(arg, "emit-c") == 0) {
+        opts->emit_c = true;
     }
     else if (strcmp(arg, "test") == 0) {
         opts->test_mode = true;

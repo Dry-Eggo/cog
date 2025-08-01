@@ -7,11 +7,11 @@
 
 typedef jtab_tracker_t JTab;
 
-typedef struct CIntType CIntType;
 typedef struct CItem CItem;
 typedef struct CBlock CBlock;
 
 typedef enum {
+    CItemInclude,
     CItemFunction,
     CItemStruct,
     CItemTypeDef
@@ -38,18 +38,23 @@ typedef enum {
     CBinarySub,
 } CBinaryOp;
 
+typedef struct {
+    const char* path;
+    bool is_system;
+} CInclude;
+
 struct CStmt {
     CStmtKind kind;
     union {
         struct { CExpr* expr; } return_stmt;
-        struct { const char* name; CExpr* expr; CType* type; } assign;
+        struct { const char* name; CExpr* expr; const char* type; } assign;
         struct { CExpr* expr; } terminated_expr;
     };
 };
 
 struct CExpr {
     CExprKind kind;
-    CType* type;
+    const char* type;
     union {
         int64_t int_expr;
         const char* string_expr;
@@ -63,10 +68,6 @@ struct CExpr {
 struct CItem {
     CItemKind kind;
     void* data;
-};
-
-struct CIntType {
-    CIntSign sign;
 };
 
 struct CBlock {
@@ -92,12 +93,12 @@ struct CContext {
 
 struct CParam {    
     const char* name;
-    CType*      type;
+    const char*      type;
 };
 
 struct CFunction {
     const char* name;
-    CType*      type;    
+    const char* type;    
     CJVec*      params;
 
     CExpr*      return_value;
@@ -107,16 +108,6 @@ struct CFunction {
     bool        is_extern;
     bool        is_variadic;
 };
-
-struct CType {
-    CTypeKind kind;
-    bool      const_;
-
-    union {
-        CIntType int_ty;
-    };
-};
-
 
 CContext* cctx_new(JArena* arena) {
     CContext* ctx = ALLOC(CContext);
@@ -131,6 +122,16 @@ CContext* cctx_new(JArena* arena) {
     ctx->arena = arena;
     ctx->tab_tracker = jtab_new(arena);
     return ctx;
+}
+
+void cctx_add_stmt(CContext* cctx, CStmt* stmt);
+CItem* cctx_make_item(CContext* cctx, CItemKind kind, void* data);
+
+void cctx_include(CContext* cctx, const char* path, bool system) {
+    CInclude* include = CCTX_ALLOC(cctx, CInclude);
+    include->path = path;
+    include->is_system   = system;
+    cjvec_push(cctx->items, cctx_make_item(cctx, CItemInclude, include));
 }
 
 CItem* cctx_make_item(CContext* cctx, CItemKind kind, void* data) {
@@ -157,7 +158,7 @@ void cctx_end_block(CContext* cctx) {
     }
 }
 
-CParam* cctx_new_parameter(CContext* cctx, const char* name, CType* type) {
+CParam* cctx_new_parameter(CContext* cctx, const char* name, const char* type) {
     CParam* param = CCTX_ALLOC(cctx, CParam);
     param->name = jarena_strdup(cctx->arena, (char*)name);
     param->type = type;
@@ -174,7 +175,7 @@ void cctx_function_set_variadic(CContext* cctx, CFunction* func) {
     func->is_variadic = true;
 }
 
-CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, CType* type, bool has_definition) {
+CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, const char* type, bool has_definition) {
     CFunction* func = CCTX_ALLOC(cctx, CFunction);
     func->name = name;
     func->params = params;
@@ -202,22 +203,7 @@ void cctx_end_function(CContext* cctx, CFunction* func, CExpr* value) {
     func->return_value = value;
 }
 
-CType* cctx_create_type_int32(CContext* cctx, CIntSign sign, bool const_) {
-    CType* ty = CCTX_ALLOC(cctx, CType);
-    ty->kind = CTypeInt;
-    ty->const_ = const_;
-    ty->int_ty.sign = sign;
-    return ty;
-}
-
-CType* cctx_create_type_string(CContext* cctx, bool const_) {
-    CType* ty = CCTX_ALLOC(cctx, CType);
-    ty->kind = CTypeString;
-    ty->const_ = const_;
-    return ty;    
-}
-
-CExpr* cctx_create_value_int(CContext* cctx, CType* type, int64_t value) {
+CExpr* cctx_create_value_int(CContext* cctx, const char* type, int64_t value) {
     CExpr* expr = CCTX_ALLOC(cctx, CExpr);
     expr->type = type;
     expr->kind = CExprInt;
@@ -225,7 +211,7 @@ CExpr* cctx_create_value_int(CContext* cctx, CType* type, int64_t value) {
     return expr;
 }
 
-CExpr* cctx_create_value_string(CContext* cctx, CType* type, const char* value) {
+CExpr* cctx_create_value_string(CContext* cctx, const char* type, const char* value) {
     CExpr* expr = CCTX_ALLOC(cctx, CExpr);
     expr->type = type;
     expr->kind = CExprString;
@@ -272,7 +258,7 @@ void cctx_add_stmt(CContext* cctx, CStmt* stmt) {
     else UNREACHABLE;
 }
 
-void cctx_assign_value(CContext* cctx, CType* type, const char* name, CExpr* expr) {
+void cctx_assign_value(CContext* cctx, const char* type, const char* name, CExpr* expr) {
     CStmt* stmt = CCTX_ALLOC(cctx, CStmt);
     stmt->kind = CStmtAssignVar;
     stmt->assign.name = name;
@@ -287,24 +273,6 @@ void cctx_terminate_expr(CContext* cctx, CExpr* expr) {
     stmt->kind = CStmtTerminatedExpr;
     stmt->terminated_expr.expr = expr;
     cctx_add_stmt(cctx, stmt);    
-}
-
-const char* cctx_type_to_str(CContext* cctx, CType* type) {
-    JBuffer* tmp = jb_create();
-    if (type->kind == CTypeInt) {
-        CIntType int_type = type->int_ty;
-        if (int_type.sign == CIntUnsigned) {
-            jb_appendf_a(tmp, cctx->arena, "unsigned int");
-        } else {
-            jb_appendf_a(tmp, cctx->arena, "int");
-        }
-    } else if (type->kind == CTypeString) {
-        if (type->const_) jb_appendf_a(tmp, cctx->arena,"const ");
-        jb_appendf_a(tmp, cctx->arena, "char*");
-    }
-    const char* type_str = jb_str_a(tmp, cctx->arena);
-    jb_free(tmp);
-    return type_str;
 }
 
 const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
@@ -357,7 +325,7 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
 void cctx_walk_stmt(CContext* cctx, CStmt* stmt) {
     if (stmt->kind == CStmtAssignVar) {
         const char* name = stmt->assign.name;
-        const char* type_str = cctx_type_to_str(cctx, stmt->assign.type);
+        const char* type_str = stmt->assign.type;
         const char* expr_str = cctx_walk_expr(cctx, stmt->assign.expr);
         jb_appendf_a(cctx->body, cctx->arena, "%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
     } else if (stmt->kind == CStmtTerminatedExpr) {
@@ -377,7 +345,7 @@ const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
     JBuffer* tmp = jb_create();
     FOREACH(CParam*, param, i, params) {
         const char* name = param->name;
-        const char* type = cctx_type_to_str(cctx, param->type);
+        const char* type = param->type;
         jb_appendf_a(tmp, cctx->arena, "%s %s", type, name);
         if (i == cjvec_len(params) - 1) break;
         jb_appendf_a(tmp, cctx->arena, ",");
@@ -387,8 +355,8 @@ const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
 }
 
 void cctx_walk_function(CContext* cctx, CFunction* func) {
-    const char* name = func->name;
-    const char* type_str = cctx_type_to_str(cctx, func->type);
+    const char* name     = func->name;
+    const char* type_str = func->type;
 
     jb_appendf_a(cctx->body, cctx->arena, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
     cctx_walk_parameters(cctx, func->params), func->is_variadic ? ", ...)" : ")");
@@ -413,6 +381,11 @@ void cctx_walk_items(CContext* cctx) {
     FOREACH(CItem*, item, i, cctx->items) {
         if (item->kind == CItemFunction) {
             cctx_walk_function(cctx, (CFunction*)item->data);
+        } else if (item->kind == CItemInclude) {
+            CInclude* include = (CInclude*)item->data;
+            if (include->is_system) {
+                jb_appendf_a(cctx->includes, cctx->arena, "#include <%s>\n", include->path);
+            } else jb_appendf_a(cctx->includes, cctx->arena, "#include \"%s\"\n", include->path);
         }
     }
 }

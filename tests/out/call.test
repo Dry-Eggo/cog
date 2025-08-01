@@ -1,7 +1,6 @@
-extern int printf (const char* fmt, ...); // printf
-extern int strlen (const char* s); // strlen
-int main ()
-{
-    int age = 40;
-    printf("Hello World %d\n", strlen("Hello"));
-} // main
+Cog: Error: (10:6): cannot pass 'int' to type 'cstr'
+    ----> tests/call.cg
+    10 |	foo(age);
+       |	    ^~~  
+cog: 1 semantic errors occurred
+Cog: compilation aborted

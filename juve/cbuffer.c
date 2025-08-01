@@ -38,17 +38,11 @@ size_t cjb_append(CJBuffer* cbuf, const char* str) {
     
     size_t total_len = cbuf->len + strlen(str);
     if (total_len >= cbuf->cap) {
-        size_t newsz = cbuf->cap * 2;
+        size_t newsz = total_len > cbuf->cap*2 ? total_len : cbuf->cap*2;
         char* new_data = (char*)jarena_alloc(cbuf->arena, newsz);
-        if (!new_data) return -1;
+        if (!new_data) return -1;      
         
-        while (total_len >= cbuf->cap) {
-            newsz *= 2;
-            new_data = (char*)jarena_alloc(cbuf->arena, newsz);
-            if (!new_data) return -1;
-        }
-        
-        memcpy(new_data, cbuf->data, cbuf->len + 1);
+        memcpy(new_data, cbuf->data, sizeof(char)*cbuf->len);
         cbuf->data = new_data;
         cbuf->cap = newsz;
     }
@@ -71,7 +65,6 @@ size_t cjb_appendf(CJBuffer* cbuf, const char* fmt, ...) {
     va_start(args_real, fmt);
 
     vsnprintf(str, needed + 1, fmt, args_real);
-    str[needed + 1] = '\0';
 
     cjb_append(cbuf, str);
     

@@ -41,8 +41,8 @@ ExprResult eresult_new(CExpr* e, TypeInfo* ty) {
 void add_type(Semantics* sema, const char* name, TypeInfo* type);
 
 void initialize_builtin_types(Semantics* sema) {
-    add_type(sema, "int",  type_new(type_int_k,     "int",  "int"));
-    add_type(sema, "cstr", type_new(type_cstring_k, "cstr", "const char*"));
+    add_type(sema, "int",  type_new(type_int_k,     "int",  "kudo_int"));
+    add_type(sema, "cstr", type_new(type_cstring_k, "cstr", "kudo_cstr"));
     add_type(sema, "none", type_new(type_none_k,    "none", "void"));
 }
 
@@ -56,7 +56,11 @@ Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, 
     sema->diagnostics     = cjvec_new(global_arena);    
     sema->root            = create_new_context(NULL);
     sema->current_context = sema->root;
-    initialize_builtin_types(sema);    
+    initialize_builtin_types(sema);
+
+    //  include the runtime header
+    cctx_include(sema->cctx, get_runtime_header_path(), false);
+    
     return sema;
 }
 
@@ -87,16 +91,13 @@ TypeInfo* check_type(Semantics* sema, TypeInfo* type);
 TypeInfo* get_type_info(Semantics* sema, const char* type_name);
 bool      type_match(Semantics* sema, TypeInfo* t1, TypeInfo* t2);
 
-// cbackend
-CType* sema_convert_type(Semantics* sema, TypeInfo* ty);
-
 void add_diagnostic(Semantics* sema, SemaError* err);
 
 void add_diagnostic(Semantics* sema, SemaError* err) {
     cjvec_push(sema->diagnostics, (void*)err);
 }
 
-void add_func(Semantics* sema, FunctionDef func) {
+void add_func(Semantics* sema, FunctionDef func, Span span) {
 
     CJVec* params = cjvec_new(global_arena);
     for (size_t i = 0; i < func.params.count; ++i) {
@@ -105,7 +106,7 @@ void add_func(Semantics* sema, FunctionDef func) {
         cjvec_push(params, param_info_new(pdef.name, ptype));
     }
     
-    FunctionInfo* finfo = func_info_new(func.name, func.linkage_name, func.name, func.is_variadic, params, func.return_type);
+    FunctionInfo* finfo = func_info_new(span, func.name, func.linkage_name, func.name, func.is_variadic, params, func.return_type);
     context_add_function(sema->current_context, func.name, (void*)finfo);
     register_sym(sema, func.name, syminfo_new(func.name, func.name_span, func.return_type, sym_function_k));
 }
@@ -126,18 +127,12 @@ FunctionInfo* get_funcinfo(Semantics* sema, const char* name)  {
     return context_get_function(sema->current_context, name);
 }
 
-CType* sema_convert_type(Semantics* sema, TypeInfo* ty) {
-    if (type_get_kind(ty) == type_int_k) return cctx_create_type_int32(sema->cctx, CIntSigned, false);
-    if (type_get_kind(ty) == type_cstring_k) return cctx_create_type_string(sema->cctx, true);
-    return NULL;
-}
-
 CJVec* sema_convert_param(Semantics* sema, Params params) {
     CJVec* vec = cjvec_new(global_arena);
     size_t max = params.count;
     for (size_t i = 0; i < max; ++i) {
         ParamDef paramdef = params.items[i];
-        CType*   type     = sema_convert_type(sema, paramdef.type);
+        const char*   type     = type_get_repr(check_type(sema, paramdef.type));
         cjvec_push(vec, cctx_new_parameter(sema->cctx, paramdef.name, type));
     }
     
@@ -165,9 +160,13 @@ void check_function(Semantics* sema, Item* item) {
         final_ty = get_type_info(sema, "int");
     }
     
-    CType* functype = sema_convert_type(sema, final_ty);    
+    const char* functype = type_get_repr(final_ty);    
     CFunction* func = NULL;
 
+    for (size_t i = 0; i < funcdef.params.count; ++i) {
+        ParamDef pdef = funcdef.params.items[i];
+        register_sym(sema, pdef.name, syminfo_new(pdef.name, pdef.span, check_type(sema, pdef.type), sym_variable_k));
+    }
     CJVec* params = sema_convert_param(sema, funcdef.params);
     
     if (funcdef.is_decl) {
@@ -226,7 +225,7 @@ StmtResult check_stmt(Semantics* sema, Stmt* stmt) {
             }
         }
 
-        CType* var_type = sema_convert_type(sema, final_ty);
+        const char* var_type = type_get_repr(final_ty);
         cctx_assign_value(sema->cctx, var_type, vardecl.identifer, expr.expr);
         register_sym(sema, vardecl.identifer, syminfo_new(vardecl.identifer, vardecl.span, final_ty, sym_variable_k));
     } else if (stmt->kind == stmt_expr_k) {
@@ -247,13 +246,17 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         return eresult_new(NULL, NULL);
     } break;
     case expr_int_k: {
-        CType* int_type = cctx_create_type_int32(sema->cctx, CIntSigned, false);
-        CExpr* cexpr = cctx_create_value_int(sema->cctx, int_type, expr->data.literal.lit.int_value);
+        CExpr* cexpr = cctx_create_value_int(sema->cctx,
+        type_get_repr(get_type_info(sema, "int")),
+        expr->data.literal.lit.int_value);
+        
         return eresult_new(cexpr, get_type_info(sema, "int"));
     } break;
     case expr_cstring_k: {
-        CType* cstr_type = cctx_create_type_string(sema->cctx, true);
-        CExpr* cexpr = cctx_create_value_string(sema->cctx, cstr_type, expr->data.literal.lit.cstring_value);
+        CExpr* cexpr = cctx_create_value_string(sema->cctx,
+        type_get_repr(get_type_info(sema, "cstr")),
+        expr->data.literal.lit.cstring_value);
+        
         return eresult_new(cexpr, get_type_info(sema, "cstr"));
     } break;
     case expr_ident_k: {
@@ -294,20 +297,21 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         size_t arity_ex  = func_info_get_arity(finfo);
         if (arity_got != arity_ex && !is_variadic_function(finfo)) {
             CJBuffer* tmp  =  cjb_create(global_arena);
-            cjb_appendf(tmp, "invalid argument count. expected '%zu' but got '%zu' instead");
+            cjb_appendf(tmp, "invalid argument count. expected %zu but got %zu instead", arity_ex, arity_got);
             add_diagnostic(sema, make_generic_error(expr->span, cjb_str(tmp), "please confirm arity"));
         }
 
         CJVec* args = cjvec_new(global_arena);
         FOREACH(Expr*, arg, i, call.args) {
             ExprResult arg_res = check_expr(sema, arg);
-            if (i < arity_ex && is_variadic_function(finfo)) {
+            if (i < arity_ex) {
+                // these are the parameters we can check
                 ParamInfo* pinfo   = get_param_info(finfo, i);
-                TypeInfo*  ptype = check_type(sema, pinfo->type);
+                TypeInfo*  ptype =   pinfo->type;
                 if (!type_match(sema, ptype, arg_res.type)) {
                     CJBuffer* tmp  =  cjb_create(global_arena);
                     cjb_appendf(tmp, "cannot pass '%s' to type '%s'", type_get_name(arg_res.type), type_get_name(ptype));
-                    add_diagnostic(sema, make_generic_error(expr->span, cjb_str(tmp), NULL));
+                    add_diagnostic(sema, make_generic_error(arg->span, cjb_str(tmp), NULL));                    
                 }
             }            
             cjvec_push(args, (void*)arg_res.expr);
@@ -389,7 +393,7 @@ CJVec* sema_get_diagnostics(Semantics* sema) {
 bool sema_run_first_pass(Semantics* sema) {
     FOREACH(Item*, item, item_count, sema->program) {
         if (item->kind == item_function_k) {
-            add_func(sema, item->data.fndef);
+            add_func(sema, item->data.fndef, item->span);
         }        
     }        
     return true;

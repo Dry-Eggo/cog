@@ -1,81 +1,21 @@
-==20397== Memcheck, a memory error detector
-==20397== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
-==20397== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
-==20397== Command: bin/cogc tests/main.cg
-==20397== Parent PID: 20396
-==20397== 
-==20397== Invalid write of size 1
-==20397==    at 0x10B9DD: cjb_appendf (juve/cbuffer.c:74)
-==20397==    by 0x112B1E: emit_file (compiler/driver.c:44)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397==  Address 0x4e542d7 is 0 bytes after a block of size 7 alloc'd
-==20397==    at 0x4848FD3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==20397==    by 0x10BF14: jmalloc (juve/jmem.cpp:6)
-==20397==    by 0x10BFB9: jarena_alloc (juve/jmem.cpp:24)
-==20397==    by 0x10B993: cjb_appendf (juve/cbuffer.c:69)
-==20397==    by 0x112B1E: emit_file (compiler/driver.c:44)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397== 
-==20397== Invalid write of size 1
-==20397==    at 0x10B9DD: cjb_appendf (juve/cbuffer.c:74)
-==20397==    by 0x112B7D: emit_file (compiler/driver.c:53)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397==  Address 0x4e56775 is 0 bytes after a block of size 5 alloc'd
-==20397==    at 0x4848FD3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==20397==    by 0x10BF14: jmalloc (juve/jmem.cpp:6)
-==20397==    by 0x10BFB9: jarena_alloc (juve/jmem.cpp:24)
-==20397==    by 0x10B993: cjb_appendf (juve/cbuffer.c:69)
-==20397==    by 0x112B7D: emit_file (compiler/driver.c:53)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397== 
-==20397== Invalid write of size 1
-==20397==    at 0x10B9DD: cjb_appendf (juve/cbuffer.c:74)
-==20397==    by 0x10BD89: jcmd_append (juve/cjmd.c:21)
-==20397==    by 0x112BF1: emit_file (compiler/driver.c:57)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397==  Address 0x4e56817 is 0 bytes after a block of size 7 alloc'd
-==20397==    at 0x4848FD3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==20397==    by 0x10BF14: jmalloc (juve/jmem.cpp:6)
-==20397==    by 0x10BFB9: jarena_alloc (juve/jmem.cpp:24)
-==20397==    by 0x10B993: cjb_appendf (juve/cbuffer.c:69)
-==20397==    by 0x10BD89: jcmd_append (juve/cjmd.c:21)
-==20397==    by 0x112BF1: emit_file (compiler/driver.c:57)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397== 
-==20397== Invalid write of size 1
-==20397==    at 0x10B9DD: cjb_appendf (juve/cbuffer.c:74)
-==20397==    by 0x10BD89: jcmd_append (juve/cjmd.c:21)
-==20397==    by 0x112C55: emit_file (compiler/driver.c:60)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397==  Address 0x4e57244 is 0 bytes after a block of size 4 alloc'd
-==20397==    at 0x4848FD3: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
-==20397==    by 0x10BF14: jmalloc (juve/jmem.cpp:6)
-==20397==    by 0x10BFB9: jarena_alloc (juve/jmem.cpp:24)
-==20397==    by 0x10B993: cjb_appendf (juve/cbuffer.c:69)
-==20397==    by 0x10BD89: jcmd_append (juve/cjmd.c:21)
-==20397==    by 0x112C55: emit_file (compiler/driver.c:60)
-==20397==    by 0x112F4D: cog_compile (compiler/driver.c:110)
-==20397==    by 0x117476: main (compiler/main.c:25)
-==20397== 
-==20397== 
-==20397== HEAP SUMMARY:
-==20397==     in use at exit: 392 bytes in 1 blocks
-==20397==   total heap usage: 193 allocs, 192 frees, 126,307 bytes allocated
-==20397== 
-==20397== LEAK SUMMARY:
-==20397==    definitely lost: 392 bytes in 1 blocks
-==20397==    indirectly lost: 0 bytes in 0 blocks
-==20397==      possibly lost: 0 bytes in 0 blocks
-==20397==    still reachable: 0 bytes in 0 blocks
-==20397==         suppressed: 0 bytes in 0 blocks
-==20397== Rerun with --leak-check=full to see details of leaked memory
-==20397== 
-==20397== For lists of detected and suppressed errors, rerun with: -s
-==20397== ERROR SUMMARY: 9 errors from 4 contexts (suppressed: 0 from 0)
+==10859== Memcheck, a memory error detector
+==10859== Copyright (C) 2002-2024, and GNU GPL'd, by Julian Seward et al.
+==10859== Using Valgrind-3.23.0 and LibVEX; rerun with -h for copyright info
+==10859== Command: bin/cogc tests/main.cg
+==10859== Parent PID: 10858
+==10859== 
+==10859== 
+==10859== HEAP SUMMARY:
+==10859==     in use at exit: 392 bytes in 1 blocks
+==10859==   total heap usage: 191 allocs, 190 frees, 126,399 bytes allocated
+==10859== 
+==10859== LEAK SUMMARY:
+==10859==    definitely lost: 392 bytes in 1 blocks
+==10859==    indirectly lost: 0 bytes in 0 blocks
+==10859==      possibly lost: 0 bytes in 0 blocks
+==10859==    still reachable: 0 bytes in 0 blocks
+==10859==         suppressed: 0 bytes in 0 blocks
+==10859== Rerun with --leak-check=full to see details of leaked memory
+==10859== 
+==10859== For lists of detected and suppressed errors, rerun with: -s
+==10859== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)

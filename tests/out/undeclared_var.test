@@ -4,6 +4,5 @@ Cog: Error: (5:18): symbol 'age3' was not declared in this scope
      4 |     let age := 40;
      5 |     let age2 := age3;
        |                 ^~~~ 
-
 cog: 1 semantic errors occurred
 Cog: compilation aborted

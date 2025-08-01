@@ -1,0 +1,9 @@
+#include "/home/dry/programming/c/cog/runtime/cog.h"
+
+extern kudo_int printf (kudo_cstr fmt, ...); // printf
+extern kudo_int strlen (kudo_cstr s); // strlen
+kudo_int main ()
+{
+    kudo_int age = 40;
+    printf"Hello World\n);
+} // main

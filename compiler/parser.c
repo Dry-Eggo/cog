@@ -10,6 +10,7 @@
 #define err_semi(p) add_error(p, make_syntax_error(*parser_now(p)->span, "Unqualified token", "did you forget a ';'"))
 #define get_span(p) (*parser_now(p)->span)
 #define get_pspan(p) (parser_now(p)->span)
+#define err_param (ParamDef){"error", false, param_span, NULL, NULL}
 
 Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source) {
     UNUSED(opts);
@@ -131,21 +132,23 @@ ParamDef parse_param(Parser* parser) {
         param_span = get_span(parser);
         parser_advance(parser);
     } else {
-        TODO("handle missing parameter name");
+        add_error(parser, make_syntax_error(get_span(parser),
+        "expected a paramneter name", NULL));
+        recover_until(parser, token_cparen_k);
+        return err_param;
     }
-
-    if (!expect(parser, token_colon_k)) {
-        TODO("handle missing type annotation");
-    }
-
-    param_type = parse_type(parser);
     
-    if (!param_type) {
-        TODO("handle invalid type");
+    if (!expect(parser, token_colon_k)) {
+        add_error(parser, make_syntax_error(get_span(parser),
+        "expected a type", NULL));
+        recover_until(parser, token_cparen_k);
+        return err_param;
     }
+    param_type = parse_type(parser);   
 
     if (match(parser, token_eq_k)) {
-        TODO("handle param default");
+        parser_advance(parser);
+        param_init = parse_expr(parser);
     }
         
     return (ParamDef) {param_name, has_init, param_span, param_type, param_init};
@@ -185,7 +188,8 @@ Item* parse_function(Parser* parser) {
         }
         funcdef.params = params;
 	    if (!expect(parser, token_cparen_k))  {
-            TODO("handle no matching paren");
+	        add_error(parser, make_syntax_error(get_span(parser), "unterminated parameter list", NULL));
+	        recover_until(parser, token_eof_k);            
 	    }
     }
 
