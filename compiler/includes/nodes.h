@@ -86,11 +86,11 @@ struct expr_ {
     ExprKind kind;
     Span span;
     union {
-	    struct expr_literal literal;
-	    struct expr_block   block;
-        struct expr_binop   binop;
-        struct expr_call    call_expr;
-        struct expr_inner   inner_expr;
+	    struct expr_literal  literal;
+	    struct expr_block    block;
+        struct expr_binop    binop;
+        struct expr_call     call_expr;
+        struct expr_inner    inner_expr;
     } data;
 };
 
@@ -116,6 +116,8 @@ Expr* expr_make_literal_int(long value, Span span);
 Expr* expr_make_identifier(const char* name, Span span);
 Expr* expr_make_binop(BinaryOpExpr expr, Span span);
 Expr* expr_make_cstring(const char* value, Span span);
+Expr* expr_make_cstring(const char* value, Span span);
+Expr* expr_make_no_op(Span span);
 Expr* expr_make_call(Expr* callee, CJVec* args, Span span);
 
 Stmt* stmt_make_vardecl(VarDeclStmt vardecl, Span);

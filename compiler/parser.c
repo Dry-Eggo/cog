@@ -317,7 +317,6 @@ Expr*  parse_conditional(Parser* parser) {
 Expr*  parse_additive(Parser* parser) {
     Span* start = get_pspan(parser);
     Expr* lhs = parse_term(parser);
-
     while (match(parser, token_add_k) || match(parser, token_sub_k)) {
         BinaryOpExpr binop = {0};
         binop.op = match(parser, token_add_k) ? BINOP_ADD: BINOP_SUB;
@@ -326,13 +325,22 @@ Expr*  parse_additive(Parser* parser) {
         binop.rhs = parse_term(parser);
         Span* end = get_pspan(parser);
         lhs = expr_make_binop(binop, span_merge(start, end));
-    }
-    
+    }    
     return lhs;
 }
 
 Expr* parse_term(Parser* parser) {
+    Span* start = get_pspan(parser);
     Expr* lhs = parse_postifix(parser);
+    while (match(parser, token_mul_k) || match(parser, token_div_k)) {
+        BinaryOpExpr binop = {0};
+        binop.op = match(parser, token_mul_k) ? BINOP_MUL: BINOP_DIV;
+        parser_advance(parser);
+        binop.lhs = lhs;
+        binop.rhs = parse_term(parser);
+        Span* end = get_pspan(parser);
+        lhs = expr_make_binop(binop, span_merge(start, end));
+    }
     return lhs;
 }
 
@@ -384,6 +392,9 @@ Expr* parse_atom(Parser* parser) {
         const char* value = parser_now(parser)->text;
         parser_advance(parser);
         return expr_make_cstring(value, span);
+    } else if (match(parser, token_semi_k)) {
+        Span span = get_span(parser);
+        return expr_make_no_op(span);
     } else {
 	    add_error(parser, make_syntax_error(*parser_now(parser)->span, "Not a valid expression", NULL));	
 	    if (parser->current_context == parse_func_body_k) recover_until(parser, token_eof_k);

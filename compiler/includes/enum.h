@@ -77,6 +77,8 @@ typedef enum {
     expr_int_k,
     expr_funccall_k,
     expr_compound_stmt_k,
+    expr_empty_k,
+    
     expr_error,
 } ExprKind;
 

@@ -10,15 +10,23 @@
 #include <c_backend.h>
 #include <context.h>
 
+/* To be expanded in the future */
+typedef struct CompTimeVm CompTimeVm;
+
 struct Semantics {
-    CContext*       cctx;
+    const char*     source;
+    CompileOptions* options;
+    
     CJVec*          program;
     CJVec*          diagnostics;
-    JVec*           source_lines;
+    
+    CContext*       cctx;
+    CompTimeVm*     cog;    
+    
     Context*        root;
-    Context*        current_context;    
-    CompileOptions* options;
-    const char*     source;
+    Context*        current_context;
+    
+    JVec*           source_lines;
 };
 
 typedef struct {
@@ -48,6 +56,9 @@ void initialize_builtin_types(Semantics* sema) {
 
 Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, CompileOptions* opts) {
     Semantics* sema       = ALLOC(Semantics);
+    
+    /*sema->vm            = comptime_init(global_arena);*/
+    
     sema->program         = items;
     sema->source_lines    = source_lines;
     sema->source          = source;
@@ -108,8 +119,10 @@ void add_func(Semantics* sema, FunctionDef func, Span span) {
         TypeInfo* ptype = check_type(sema, pdef.type);
         cjvec_push(params, param_info_new(pdef.name, ptype));
     }
+
+    const char* mangled_name = (strcmp(func.name, "main") == 0) ? "cog_main" : func.name;
     
-    FunctionInfo* finfo = func_info_new(span, func.name, func.linkage_name, func.name, func.is_variadic, params, func.return_type);
+    FunctionInfo* finfo = func_info_new(span, func.name, func.linkage_name, mangled_name, func.is_variadic, params, func.return_type);
     context_add_function(sema->current_context, func.name, (void*)finfo);
     register_sym(sema, func.name, syminfo_new(func.name, func.name_span, func.return_type, sym_function_k));
 }
@@ -180,12 +193,14 @@ void check_function(Semantics* sema, Item* item) {
     CFunction* func = NULL;
 
     CJVec* params = sema_convert_param(sema, funcdef.params);
+
+    FunctionInfo* func_info = get_funcinfo(sema, funcdef.name);
     
     if (funcdef.is_decl) {
-        func =  cctx_create_function(sema->cctx, funcdef.name, params, functype, false);        
+        func =  cctx_create_function(sema->cctx, func_info_get_mname(func_info), params, functype, false);        
     }
     else {
-        func =  cctx_create_function(sema->cctx, funcdef.name, params, functype, true);
+        func =  cctx_create_function(sema->cctx, func_info_get_mname(func_info), params, functype, true);
         enter_new_context(sema);
         for (size_t i = 0; i < funcdef.params.count; ++i) {
             ParamDef pdef = funcdef.params.items[i];
@@ -227,12 +242,7 @@ StmtResult check_stmt(Semantics* sema, Stmt* stmt) {
                 TODO("error_implementation");
             }
             else {
-                final_ty = get_type_info(sema, type_get_name(expr.type));
-                if (!final_ty) {
-                    // ERROR_IMPLEMENTAION
-                    LOG_ERR("invalid type: '%s'\n", type_get_name(vardecl.type));
-                    TODO("error_implementation");                    
-                }
+                final_ty = expr.type;
             }
         } else {
             final_ty = get_type_info(sema, type_get_name(vardecl.type));
@@ -253,8 +263,10 @@ StmtResult check_stmt(Semantics* sema, Stmt* stmt) {
         register_sym(sema, vardecl.identifer, syminfo_new(vardecl.identifer, vardecl.span, final_ty, sym_variable_k));
     } else if (stmt->kind == stmt_expr_k) {
         Expr* expr = stmt->data.expr;
-        ExprResult expr_res = check_expr(sema, expr);
-        cctx_terminate_expr(sema->cctx, expr_res.expr);
+        if (expr->kind != expr_empty_k) {
+            ExprResult expr_res = check_expr(sema, expr);
+            cctx_terminate_expr(sema->cctx, expr_res.expr);
+        }
     }
     return sresult_new(NULL);
 }
@@ -371,8 +383,10 @@ ExprResult check_expr(Semantics* sema, Expr* expr) {
         }
         
         switch (binop.op) {
-        case BINOP_ADD: return eresult_new(cctx_add_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr), lhs_expr.type);
-        case BINOP_SUB: return eresult_new(cctx_sub_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr), lhs_expr.type);
+        case BINOP_ADD: return eresult_new(cctx_create_binop_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr, CBinaryAdd), lhs_expr.type);
+        case BINOP_SUB: return eresult_new(cctx_create_binop_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr, CBinarySub), lhs_expr.type);
+        case BINOP_DIV: return eresult_new(cctx_create_binop_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr, CBinaryDiv), lhs_expr.type);
+        case BINOP_MUL: return eresult_new(cctx_create_binop_expr(sema->cctx, lhs_expr.expr, rhs_expr.expr, CBinaryMul), lhs_expr.type);
         default: TODO("Add all operators");
         }
         

@@ -22,10 +22,6 @@ Lexer* lexer_new(CompileOptions* opts, const char* source) {
 }
 
 void lexer_free(Lexer* lexer) {
-    if (lexer) {
-	    // doesn't free the tokens because they are allocated on the arena
-	    cjvec_free(lexer->tokens);
-    }
 }
 
 char lexer_now(Lexer* lexer) {

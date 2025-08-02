@@ -1,5 +1,5 @@
-#include <driver.h>
 #include <errors.h>
+#include <driver.h>
 #include <defines.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,13 +53,13 @@ void emit_file(CompileOptions* compile_options, CJBuffer* compiled_file) {
             compile_options->output_file = cjb_str(tmp);
         }
         
-        cmd_append(&cmd, "clang", "-o", compile_options->output_file, tmp_cfile, "-w");
+        cmd_append(&cmd, "clang", "-o", compile_options->output_file, tmp_cfile, "-w", "-L./bin", "-lcog");
         jcmd_one_shot(&cmd);
 
         if (!compile_options->emit_c) {
             cmd_append(&cmd, "rm", tmp_cfile);
+            jcmd_one_shot(&cmd);
         }
-        jcmd_one_shot(&cmd);
     }
 }
 

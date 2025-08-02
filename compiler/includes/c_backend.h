@@ -15,9 +15,11 @@ typedef enum {
 } CStorageAttr;
 
 typedef enum {
-    CIntSigned,
-    CIntUnsigned,
-} CIntSign;
+    CBinaryAdd,
+    CBinarySub,
+    CBinaryMul,
+    CBinaryDiv,
+} CBinaryOp;
 
 CContext*  cctx_new(JArena* arena);
 
@@ -34,7 +36,7 @@ CExpr*    cctx_create_value_int(CContext* ctx, const char* type, int64_t value);
 CExpr*    cctx_create_value_string(CContext* ctx, const char* type, const char* value);
 CExpr*    cctx_create_value_char(CContext* ctx, const char* type, char value);
 CExpr*    cctx_create_value_identifer(CContext* cctx, const char* identifier);
-CExpr*    cctx_add_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
+CExpr*    cctx_create_binop_expr(CContext* cctx, CExpr* lhs, CExpr* rhs, CBinaryOp op);
 CExpr*    cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs);
 CExpr*    cctx_call(CContext* cctx, const char* who, CJVec* args);
 

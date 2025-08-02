@@ -2,8 +2,8 @@ extern func printf(fmt: cstr, ...) -> int;
 extern func strlen(s: cstr) -> int;
 
 func greet(n: cstr) printf(c"Hello, %s\n", n)
-
 func main() {     
-     let age := 30;
+     let age := 50 * 50;
      greet(c"Dry");
+     printf(c"age = %d\n", age);
 }

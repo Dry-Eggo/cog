@@ -33,11 +33,6 @@ typedef enum {
     CStmtTerminatedExpr,
 } CStmtKind;
 
-typedef enum {
-    CBinaryAdd,
-    CBinarySub,
-} CBinaryOp;
-
 typedef struct {
     const char* path;
     bool is_system;
@@ -226,12 +221,12 @@ CExpr* cctx_create_value_identifer(CContext* cctx, const char* identifier) {
     return expr;
 }
 
-CExpr* cctx_add_expr(CContext* cctx, CExpr* lhs, CExpr* rhs) {
+CExpr* cctx_create_binop_expr(CContext* cctx, CExpr* lhs, CExpr* rhs, CBinaryOp op) {
     CExpr* expr = CCTX_ALLOC(cctx, CExpr);
     expr->kind  = CExprBinaryOp;
     expr->binop.lhs = lhs;
     expr->binop.rhs = rhs;
-    expr->binop.op = CBinaryAdd;
+    expr->binop.op = op;
     return expr;
 }
 
@@ -308,6 +303,8 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
         switch(expr->binop.op) {
         case CBinaryAdd: jb_appendf_a(jb, cctx->arena, "%s + %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
         case CBinarySub: jb_appendf_a(jb, cctx->arena, "%s - %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinaryMul: jb_appendf_a(jb, cctx->arena, "%s * %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinaryDiv: jb_appendf_a(jb, cctx->arena, "%s / %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
         default:
             TODO("implement all operators");
         }

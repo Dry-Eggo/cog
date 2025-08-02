@@ -19,7 +19,22 @@ typedef uint64_t cog_u64;
 typedef struct cog_string cog_string;
 typedef const char* cog_cstr;
 typedef void*       cog_ptr;
+typedef void        cog_none;
 
-#define cog_nil NULL;
+#define cog_nil NULL
 
-#endif __COG_HEADER_H__
+
+struct cog_string {
+    cog_cstr data;
+    cog_u64  len;
+    cog_u64  cap;
+};
+
+cog_string cog_stirng__init(cog_cstr str);
+cog_u64 cog_string__len(cog_string* self);
+cog_u64 cog_string__capacity(cog_string* self);
+
+#define EXPORT extern
+#define INLINE static inline
+
+#endif

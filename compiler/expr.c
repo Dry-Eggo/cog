@@ -25,6 +25,13 @@ Expr* expr_make_binop(BinaryOpExpr binop, Span span) {
     return expr;
 }
 
+Expr* expr_make_no_op(Span span) {
+    Expr* expr = ALLOC(Expr);
+    expr->kind = expr_empty_k;
+    expr->span = span;
+    return expr;    
+}
+
 Expr* expr_make_identifier(const char* name, Span span) {
     Expr* expr = ALLOC(Expr);
     expr->kind = expr_ident_k;
