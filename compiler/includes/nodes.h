@@ -64,12 +64,12 @@ typedef struct item_funcdef {
 } FunctionDef;
 
 typedef struct expr_block {
-    CJVec* statements;
+    JVec statements;
 } BlockExpr;
 
 typedef struct expr_call {
     Expr*      callee;
-    CJVec*     args;
+    JVec     args;
 } FuncCallExpr;
 
 typedef struct expr_binop {
@@ -111,14 +111,14 @@ typedef struct {
     } data;
 } Item;
 
-Expr* expr_make_block(CJVec* stmts);
+Expr* expr_make_block(JVec stmts);
 Expr* expr_make_literal_int(long value, Span span);
 Expr* expr_make_identifier(const char* name, Span span);
 Expr* expr_make_binop(BinaryOpExpr expr, Span span);
 Expr* expr_make_cstring(const char* value, Span span);
 Expr* expr_make_cstring(const char* value, Span span);
 Expr* expr_make_no_op(Span span);
-Expr* expr_make_call(Expr* callee, CJVec* args, Span span);
+Expr* expr_make_call(Expr* callee, JVec args, Span span);
 
 Stmt* stmt_make_vardecl(VarDeclStmt vardecl, Span);
 Stmt* stmt_make_expr(Expr* expr, Span span);

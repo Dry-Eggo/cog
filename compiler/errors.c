@@ -142,12 +142,12 @@ void report_err(SyntaxError* err, const char* line, JVec* source) {
     fprintf(stderr,"\n");
 }
 
-void syntax_error_flush(CJVec* errors, JVec* source) {
-    int err_count = cjvec_len(errors);
+void syntax_error_flush(JVec errors, JVec source) {
+    int err_count = jvec_len(errors);
     for (int i = 0; i < err_count; ++i) {
-	    SyntaxError* err = (SyntaxError*)cjvec_at(errors, i);
-	    const char* line = jvec_at(source, err->span.line - 1);
-	    report_err(err, line, source);
+	    SyntaxError* err = (SyntaxError*)jvec_at(&errors, i);
+	    const char* line = jvec_at(&source, err->span.line - 1);
+	    report_err(err, line, &source);
     }
 }
 
@@ -235,27 +235,27 @@ void format_err_generic(GenericSema err, JVec* source) {
     fprintf(stderr, "\n");   
 }
 
-void sema_error_flush(CJVec* errors, JVec* source) {
+void sema_error_flush(JVec errors, JVec source) {
     FOREACH(SemaError*, err, i, errors) {
         switch(err->kind) {
         case SemaErrorInvalidType: {
-            format_err_inv_ty(err->as.inv_ty, source);
+            format_err_inv_ty(err->as.inv_ty, &source);
         } break;
         case SemaErrorUndeclaredVariable: {
-            format_err_un_var(err->as.un_var, source);
+            format_err_un_var(err->as.un_var, &source);
         } break;
         case SemaErrorInvalidOperandType: {
-            format_err_inv_op(err->as.inv_op, source);
+            format_err_inv_op(err->as.inv_op, &source);
         } break;
         case SemaErrorInvalidBinaryOperand: {
-            format_err_inv_bin_opr(err->as.inv_bin_opr, source);
+            format_err_inv_bin_opr(err->as.inv_bin_opr, &source);
         } break;
         case SemaErrorGeneric: {
-            format_err_generic(err->as.gen, source);
+            format_err_generic(err->as.gen, &source);
         } break;
         default:
             UNREACHABLE;
         }
-        if (i != cjvec_len(errors) - 1) fprintf(stderr, "\n");
+        if (i != jvec_len(errors) - 1) fprintf(stderr, "\n");
     }
 }

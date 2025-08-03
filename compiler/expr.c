@@ -2,7 +2,7 @@
 #include <compiler.h>
 #include <defines.h>
 
-Expr* expr_make_block(CJVec* stmts) {
+Expr* expr_make_block(JVec stmts) {
     Expr* expr = ALLOC(Expr);
     expr->kind = expr_compound_stmt_k;
     expr->data.block.statements = stmts;
@@ -48,7 +48,7 @@ Expr* expr_make_cstring(const char* value, Span span) {
     return expr;            
 }
 
-Expr* expr_make_call(Expr* callee, CJVec* args, Span span) {
+Expr* expr_make_call(Expr* callee, JVec args, Span span) {
     Expr* expr = ALLOC(Expr);
     expr->kind = expr_funccall_k;
     expr->data.call_expr.callee = callee;

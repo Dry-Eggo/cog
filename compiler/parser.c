@@ -12,13 +12,13 @@
 #define get_pspan(p) (parser_now(p)->span)
 #define err_param (ParamDef){"error", false, param_span, NULL, NULL}
 
-Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source) {
+Parser* parser_new(CompileOptions* opts, JVec tokens, const char* source) {
     UNUSED(opts);
     Parser* parser = (Parser*)jarena_alloc(global_arena, sizeof(Parser));
     parser->tokens = tokens;
     parser->source = source;
-    parser->items = cjvec_new(global_arena);
-    parser->errors = cjvec_new(global_arena);
+    parser->items =  jvec_new(global_arena);
+    parser->errors = jvec_new(global_arena);
     parser->cursor = 0;
     parser->current_context = parse_context_no_set;
     return parser;
@@ -59,7 +59,7 @@ void recover(Parser* parser) {
 }
 
 void add_error(Parser* parser, SyntaxError* error) {
-    cjvec_push(parser->errors, (void*)error);
+    jvec_push(&parser->errors, (void*)error);
 }
 
 bool expect(Parser* parser, TokenKind k) {
@@ -85,27 +85,27 @@ bool match(Parser* parser, TokenKind k) {
 }
 
 Token* parser_now(Parser* parser) {
-    if (parser->cursor < cjvec_len(parser->tokens)) {
-	    return (Token*)cjvec_at(parser->tokens, parser->cursor);
+    if (parser->cursor < jvec_len(parser->tokens)) {
+	    return (Token*)jvec_at(&parser->tokens, parser->cursor);
     }
     // guaranteed to be eof_token
-    return (Token*)cjvec_back(parser->tokens);
+    return (Token*)jvec_back(&parser->tokens);
 }
 
 Token* parser_peek(Parser* parser) {
-    if (parser->cursor + 1 < cjvec_len(parser->tokens)) {
-	    return (Token*)cjvec_at(parser->tokens, parser->cursor + 1);
+    if (parser->cursor + 1 < jvec_len(parser->tokens)) {
+	    return (Token*)jvec_at(&parser->tokens, parser->cursor + 1);
     }
     // guaranteed to be eof_token
-    return (Token*)cjvec_back(parser->tokens);
+    return (Token*)jvec_back(&parser->tokens);
 }
 
 Token* parser_before(Parser* parser) {
     if (parser->cursor > 0) {
-	    return (Token*)cjvec_at(parser->tokens, parser->cursor - 1);
+	    return (Token*)jvec_at(&parser->tokens, parser->cursor - 1);
     }
     // guaranteed to be eof_token
-    return (Token*)cjvec_back(parser->tokens);
+    return (Token*)jvec_back(&parser->tokens);
 }
 
 Item* parse_extern(Parser* parser) {
@@ -351,10 +351,10 @@ Expr* parse_postifix(Parser* parser) {
     while (1) {
         if (match(parser, token_oparen_k)) {
             parser_advance(parser);
-            CJVec* args = cjvec_new(global_arena);
+            JVec args = jvec_new(global_arena);
             while (!match(parser, token_cparen_k)) {
                 Expr* arg = parse_expr(parser);
-                cjvec_push(args, (void*)arg);
+                jvec_push(&args, (void*)arg);
                 if (match(parser, token_comma_k)) parser_advance(parser);
             }
             Span* end = get_pspan(parser);
@@ -405,10 +405,10 @@ Expr* parse_atom(Parser* parser) {
 }
 
 Expr* parse_body(Parser* parser) {
-    CJVec* stmts = cjvec_new(global_arena);
+    JVec stmts = jvec_new(global_arena);
     while (!match(parser, token_eof_k) && !match(parser, token_cbrace_k)) {
 	    Stmt* stmt = parse_stmt(parser);
-        cjvec_push(stmts, (void*)stmt);
+        jvec_push(&stmts, (void*)stmt);
     }    
     return expr_make_block(stmts);
 }
@@ -434,10 +434,10 @@ TypeInfo* parse_type(Parser* parser) {
 bool parser_parse(Parser* parser) {
     while (!match(parser, token_eof_k)) {
 	    Item* item = parse_item(parser);
-	    cjvec_push(parser->items, (void*)item);
+	    jvec_push(&parser->items, (void*)item);
     }
     
-    return cjvec_len(parser->errors) == 0;
+    return jvec_len(parser->errors) == 0;
 }
 
 void parser_free(Parser* parser) {

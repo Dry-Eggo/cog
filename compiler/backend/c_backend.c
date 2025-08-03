@@ -56,7 +56,7 @@ struct CExpr {
         char char_expr;
         bool bool_expr;
         struct { CExpr* lhs; CExpr* rhs; CBinaryOp op; } binop;
-        struct { const char* name; CJVec* args; } call;
+        struct { const char* name; JVec args; } call;
     };
 };
 
@@ -67,20 +67,20 @@ struct CItem {
 
 struct CBlock {
     CBlock* parent;
-    CJVec* statements;    
+    JVec statements;    
 };
 
 struct CContext {
-    CJBuffer* includes; // includes
-    CJBuffer* header;   // foward_decl    
-    CJBuffer* body;     // main code
+    JBuffer  includes; // includes
+    JBuffer  header;   // foward_decl    
+    JBuffer  body;     // main code
 
     bool     output_built;
-    CJBuffer* final_output;
+    JBuffer final_output;
     
     CBlock*  current_block;
     
-    CJVec*   items;
+    JVec   items;
 
     JTab tab_tracker;
     JArena*  arena;
@@ -94,7 +94,7 @@ struct CParam {
 struct CFunction {
     const char* name;
     const char* type;    
-    CJVec*      params;
+    JVec      params;
 
     CExpr*      return_value;
     
@@ -106,11 +106,11 @@ struct CFunction {
 
 CContext* cctx_new(JArena* arena) {
     CContext* ctx = ALLOC(CContext);
-    ctx->includes = cjb_create(arena);
-    ctx->header   = cjb_create(arena);
-    ctx->body     = cjb_create(arena);
+    ctx->includes = jb_create(arena);
+    ctx->header   = jb_create(arena);
+    ctx->body     = jb_create(arena);
 
-    ctx->items = cjvec_new(global_arena);
+    ctx->items = jvec_new(global_arena);
     
     ctx->output_built = false;    
     
@@ -126,7 +126,7 @@ void cctx_include(CContext* cctx, const char* path, bool system) {
     CInclude* include = CCTX_ALLOC(cctx, CInclude);
     include->path = path;
     include->is_system   = system;
-    cjvec_push(cctx->items, cctx_make_item(cctx, CItemInclude, include));
+    jvec_push(&cctx->items, cctx_make_item(cctx, CItemInclude, include));
 }
 
 CItem* cctx_make_item(CContext* cctx, CItemKind kind, void* data) {
@@ -139,7 +139,7 @@ CItem* cctx_make_item(CContext* cctx, CItemKind kind, void* data) {
 
 CBlock* cctx_new_block(CContext* cctx, CBlock* parent) {
     CBlock* block = CCTX_ALLOC(cctx, CBlock);
-    block->statements = cjvec_new(cctx->arena);
+    block->statements = jvec_new(cctx->arena);
     block->parent = parent;
     return block;
 }
@@ -170,7 +170,7 @@ void cctx_function_set_variadic(CContext* cctx, CFunction* func) {
     func->is_variadic = true;
 }
 
-CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params, const char* type, bool has_definition) {
+CFunction* cctx_create_function(CContext* cctx, const char* name, JVec params, const char* type, bool has_definition) {
     CFunction* func = CCTX_ALLOC(cctx, CFunction);
     func->name = name;
     func->params = params;
@@ -189,7 +189,7 @@ CFunction* cctx_create_function(CContext* cctx, const char* name, CJVec* params,
         func->block = NULL;
     }
     
-    cjvec_push(cctx->items, (void*) cctx_make_item(cctx, CItemFunction, (void*)func));
+    jvec_push(&cctx->items, (void*) cctx_make_item(cctx, CItemFunction, (void*)func));
     return func;
 }
 
@@ -239,7 +239,7 @@ CExpr* cctx_sub_expr(CContext* cctx, CExpr* lhs, CExpr* rhs) {
     return expr;
 }
 
-CExpr* cctx_call(CContext* cctx, const char* who, CJVec* args) {
+CExpr* cctx_call(CContext* cctx, const char* who, JVec args) {
     CExpr* expr = CCTX_ALLOC(cctx, CExpr);
     expr->kind  = CExprCall;
     expr->call.name = who;
@@ -249,7 +249,7 @@ CExpr* cctx_call(CContext* cctx, const char* who, CJVec* args) {
 }
 
 void cctx_add_stmt(CContext* cctx, CStmt* stmt) {
-    if (cctx->current_block) cjvec_push(cctx->current_block->statements, (void*)stmt);
+    if (cctx->current_block) jvec_push(&cctx->current_block->statements, (void*)stmt);
     else UNREACHABLE;
 }
 
@@ -280,37 +280,35 @@ const char* cctx_walk_expr(CContext* cctx, CExpr* expr) {
     case CExprIdentifier:
         return expr->string_expr;
     case CExprString: {
-        JBuffer* jb = jb_create();
-        jb_appendf_a(jb, cctx->arena, "\"%s\"", expr->string_expr);
-        const char* string = jb_str_a(jb, cctx->arena);
-        jb_free(jb);
+        JBuffer jb = jb_create(cctx->arena);
+        jb_appendf(&jb, "\"%s\"", expr->string_expr);
+        const char* string = jb_str(jb);
         return string;
     }
     case CExprCall: {        
-        CJBuffer* tmp = cjb_create(cctx->arena);
-        cjb_appendf(tmp, "%s(", expr->call.name);
+        JBuffer tmp = jb_create(cctx->arena);
+        jb_appendf(&tmp, "%s(", expr->call.name);
         FOREACH(CExpr*, arg, i, expr->call.args) {
-            cjb_appendf(tmp, "%s", cctx_walk_expr(cctx, arg));
-            if (i == cjvec_len(expr->call.args) - 1) break;
-            cjb_append(tmp, ", ");
+            jb_appendf(&tmp, "%s", cctx_walk_expr(cctx, arg));
+            if (i == jvec_len(expr->call.args) - 1) break;
+            jb_append(&tmp, ", ");
         }
-        cjb_append(tmp, ")");
-        return cjb_str(tmp);
+        jb_append(&tmp, ")");
+        return jb_str(tmp);
     }
     case CExprBinaryOp: {
-        JBuffer* jb = jb_create();
+        JBuffer jb = jb_create(cctx->arena);
 
         switch(expr->binop.op) {
-        case CBinaryAdd: jb_appendf_a(jb, cctx->arena, "%s + %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
-        case CBinarySub: jb_appendf_a(jb, cctx->arena, "%s - %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
-        case CBinaryMul: jb_appendf_a(jb, cctx->arena, "%s * %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
-        case CBinaryDiv: jb_appendf_a(jb, cctx->arena, "%s / %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinaryAdd: jb_appendf(&jb, "%s + %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinarySub: jb_appendf(&jb, "%s - %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinaryMul: jb_appendf(&jb, "%s * %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
+        case CBinaryDiv: jb_appendf(&jb, "%s / %s", cctx_walk_expr(cctx, expr->binop.lhs), cctx_walk_expr(cctx, expr->binop.rhs)); break;
         default:
             TODO("implement all operators");
         }
         
-        const char* result = jb_str_a(jb, cctx->arena);
-        jb_free(jb);
+        const char* result = jb_str(jb);
         return result;
     }        
     default:
@@ -324,9 +322,9 @@ void cctx_walk_stmt(CContext* cctx, CStmt* stmt) {
         const char* name = stmt->assign.name;
         const char* type_str = stmt->assign.type;
         const char* expr_str = cctx_walk_expr(cctx, stmt->assign.expr);
-        cjb_appendf(cctx->body,"%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
+        jb_appendf(&cctx->body, "%s%s %s = %s;\n", jtab_to_str(&cctx->tab_tracker), type_str, name, expr_str);
     } else if (stmt->kind == CStmtTerminatedExpr) {
-        cjb_appendf(cctx->body, "%s%s;\n", jtab_to_str(&cctx->tab_tracker), cctx_walk_expr(cctx, stmt->terminated_expr.expr));
+        jb_appendf(&cctx->body, "%s%s;\n", jtab_to_str(&cctx->tab_tracker), cctx_walk_expr(cctx, stmt->terminated_expr.expr));
     }
 }
 
@@ -338,17 +336,16 @@ void cctx_walk_block(CContext* cctx, CBlock* block) {
     jtab_sub_level(&cctx->tab_tracker);
 }
 
-const char* cctx_walk_parameters(CContext* cctx, CJVec* params) {
-    JBuffer* tmp = jb_create();
+const char* cctx_walk_parameters(CContext* cctx, JVec params) {
+    JBuffer tmp = jb_create(cctx->arena);
     FOREACH(CParam*, param, i, params) {
         const char* name = param->name;
         const char* type = param->type;
-        jb_appendf_a(tmp, cctx->arena, "%s %s", type, name);
-        if (i == cjvec_len(params) - 1) break;
-        jb_appendf_a(tmp, cctx->arena, ",");
+        jb_appendf(&tmp, "%s %s", type, name);
+        if (i == jvec_len(params) - 1) break;
+        jb_appendf(&tmp, ",");
     }
-    const char* res = jb_str_a(tmp, cctx->arena);
-    jb_free(tmp);
+    const char* res = jb_str(tmp);
     return res;
 }
 
@@ -356,7 +353,7 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
     const char* name     = func->name;
     const char* type_str = func->type;
 
-    cjb_appendf(cctx->body, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
+    jb_appendf(&cctx->body, "%s%s %s (%s%s", (func->is_extern) ? "extern " : "", type_str, name,
     cctx_walk_parameters(cctx, func->params), func->is_variadic ? ", ...)" : ")");
     if (func->return_value) {
         TODO("implement return values");
@@ -364,15 +361,15 @@ void cctx_walk_function(CContext* cctx, CFunction* func) {
 
     if (func->has_definition) {
         // generate the body
-        cjb_appendf(cctx->body, "\n{\n");
+        jb_appendf(&cctx->body, "\n{\n");
         if (func->block) {
             cctx_walk_block(cctx, func->block);
         }
-        cjb_appendf(cctx->body, "}");
+        jb_appendf(&cctx->body, "}");
     } else {
-        cjb_appendf(cctx->body, ";");        
+        jb_appendf(&cctx->body, ";");        
     }
-    cjb_appendf(cctx->body, " // %s\n", name);
+    jb_appendf(&cctx->body, " // %s\n", name);
 }
 
 void cctx_walk_items(CContext* cctx) {
@@ -382,29 +379,29 @@ void cctx_walk_items(CContext* cctx) {
         } else if (item->kind == CItemInclude) {
             CInclude* include = (CInclude*)item->data;
             if (include->is_system) {
-                cjb_appendf(cctx->includes, "#include <%s>\n", include->path);
-            } else cjb_appendf(cctx->includes, "#include \"%s\"\n", include->path);
+                jb_appendf(&cctx->includes, "#include <%s>\n", include->path);
+            } else jb_appendf(&cctx->includes, "#include \"%s\"\n", include->path);
         }
     }
 }
 
 
-CJBuffer* cctx_get_output(CContext* cctx) {
+JBuffer* cctx_get_output(CContext* cctx) {
     if (!cctx->output_built) {
-        cctx->final_output = cjb_create(cctx->arena);
+        cctx->final_output = jb_create(cctx->arena);
         cctx_walk_items(cctx);
         
-        const char* includes = cjb_len(cctx->includes) == 0 ? NULL : cjb_str(cctx->includes);
-        const char* header   = cjb_len(cctx->header)   == 0 ? NULL : cjb_str(cctx->header);
-        const char* body     = cjb_len(cctx->body)     == 0 ? NULL : cjb_str(cctx->body);
+        const char* includes = jb_len(cctx->includes) == 0 ? NULL : jb_str(cctx->includes);
+        const char* header   = jb_len(cctx->header)   == 0 ? NULL : jb_str(cctx->header);
+        const char* body     = jb_len(cctx->body)     == 0 ? NULL : jb_str(cctx->body);
         
-        if (includes) cjb_appendf(cctx->final_output, "%s\n", includes);
-        if (header) cjb_appendf(cctx->final_output, "%s\n", header);
-        if (body) cjb_appendf(cctx->final_output, "%s", body);
+        if (includes) jb_appendf(&cctx->final_output, "%s\n", includes);
+        if (header) jb_appendf(&cctx->final_output, "%s\n", header);
+        if (body) jb_appendf(&cctx->final_output, "%s", body);
         cctx->output_built = true;
     }    
     
-    return cctx->final_output;        
+    return &cctx->final_output;        
 }
 
 void cctx_free(CContext* cctx) {

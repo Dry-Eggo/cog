@@ -14,7 +14,7 @@ typedef struct {
     const char* source;
     const char* source_path;
     
-    CJVec* tokens;
+    JVec tokens;
 } Lexer;
 
 Lexer* lexer_new(CompileOptions*, const char* source);

@@ -17,7 +17,9 @@ extern void print_usage(const char* program_name) {
 }
 
 int main(int argc, char** argv) {
-    global_arena = jarena_new();
+    JArena arena = jarena_new();
+    global_arena = &arena;
+    
     cm_init(&global_color_manager);
     
     CompileOptions compile_options = {0};    

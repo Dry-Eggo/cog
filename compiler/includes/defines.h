@@ -24,6 +24,6 @@ exit(1);\
 } }while (0)
 
 #define FOREACH(ty, val, i, l) \
-for (size_t i = 0; i < cjvec_len(l); ++i)\
+for (size_t i = 0; i < jvec_len(l); ++i)\
 for (int _once = 1; _once; _once = 0)\
-for (ty val = cjvec_at(l, i); _once; _once = 0)
+for (ty val = jvec_at(&l, i); _once; _once = 0)

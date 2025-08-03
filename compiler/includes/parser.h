@@ -12,17 +12,17 @@ typedef enum {
 } ParseContext;
 
 typedef struct {
-    CJVec* tokens; // from lexer
+    JVec tokens; // from lexer
     const char* source; // from lexer
 
-    CJVec* items;  // all top-level items
-    CJVec* errors;
+    JVec items;  // all top-level items
+    JVec errors;
 
     ParseContext current_context;
 
     size_t cursor;
 } Parser;
 
-Parser* parser_new(CompileOptions* opts, CJVec* tokens, const char* source);
+Parser* parser_new(CompileOptions* opts, JVec tokens, const char* source);
 bool parser_parse(Parser* parser);
 void parser_free(Parser* parser);

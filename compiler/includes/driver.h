@@ -1,6 +1,4 @@
 #pragma once
-
-#include <compiler.h>
 #include <compiler_opt.h>
 #include <c_backend.h>
 #include <color.h>
@@ -20,8 +18,8 @@ typedef struct {
     CompileOptions* options;
     CompilerPhase    phase;
 
-    JVec*        source_lines;
-    CJBuffer*    source_buffer;
+    JVec        source_lines;
+    JBuffer     source_buffer;
     const char*        source;
     
     Lexer*           lexer;

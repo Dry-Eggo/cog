@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
+
 typedef struct  {
     bool verbose_logging;
     bool test_mode;

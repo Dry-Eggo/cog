@@ -1,13 +1,8 @@
 #include "/home/dry/programming/c/cog/runtime/cog.h"
 
 extern cog_int printf (cog_cstr fmt, ...); // printf
-extern cog_int strlen (cog_cstr s); // strlen
-void greet (cog_cstr n)
+cog_int cog_main ()
 {
-    printf("Hello, %s\n", n);
-} // greet
-cog_int main ()
-{
-    cog_int age = 30;
-    greet("Dry");
-} // main
+    cog_int age = 11;
+    printf("age = %d\n", age);
+} // cog_main

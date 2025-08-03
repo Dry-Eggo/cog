@@ -77,5 +77,5 @@ SemaError*   make_invalid_binary_operand(Span span, const char* type_str);
 SemaError*   make_invalid_type(Span span, const char* got, const char* expected);
 SemaError*   make_invalid_operand_type(Span op1, Span op2, const char* op1_ty, const char* op2_ty);
 
-void syntax_error_flush(CJVec* errors, JVec* source);
-void sema_error_flush(CJVec* errors, JVec* source);
+void syntax_error_flush(JVec errors, JVec source);
+void sema_error_flush(JVec errors, JVec source);

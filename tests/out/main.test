@@ -1,6 +1,6 @@
 #include "/home/dry/programming/c/cog/runtime/cog.h"
 
-cog_int main ()
+cog_int cog_main ()
 {
     cog_cstr name = "Dry";
-} // main
+} // cog_main

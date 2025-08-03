@@ -1,5 +1,4 @@
 #include <token.h>
-#include <compiler.h>
 
 Span* span_new(size_t line, size_t col, size_t off, const char* filename) {
     Span* span = (Span*)jarena_alloc(global_arena, sizeof(Span));

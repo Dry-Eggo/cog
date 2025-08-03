@@ -5,8 +5,8 @@
 
 typedef struct Semantics Semantics;
 
-Semantics* semantics_init(CJVec* items, JVec* source_lines, const char* source, CompileOptions* opts);
-CJVec* sema_get_diagnostics(Semantics* sema);
+Semantics* semantics_init(JVec* items, JVec* source_lines, const char* source, CompileOptions* opts);
+JVec* sema_get_diagnostics(Semantics* sema);
 void sema_free(Semantics* sema);
 bool sema_check(Semantics*);
 JBuffer* sema_get_tmp(Semantics* sema);
