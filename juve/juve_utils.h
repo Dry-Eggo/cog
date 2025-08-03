@@ -21,8 +21,8 @@
 
 typedef struct JArena JArena;
 struct JArena {
-    char* base;
-    size_t capacity, offset;
+    void** data;
+    size_t capacity, count;
 };
 
   JArena  jarena_new(void);
@@ -36,27 +36,33 @@ struct JArena {
 JArena jarena_new() {
     JArena arena;
     arena.capacity = JARENA_INI_CAP;
-    arena.offset   = 0;
-    arena.base     = (char*)malloc(arena.capacity);
+    arena.count   = 0;
+    arena.data     = (void**)malloc(arena.capacity * sizeof(void*));
     return arena;
 }
 
 void jarena_reset(JArena* arena) {
-    arena->offset = 0;
+    arena->count = 0;
 }
 
 void* jarena_alloc(JArena* arena, size_t size) {
-    const size_t align = 8;
-    size = (size + (align - 1)) & ~(align - 1);
+    void* ptr = malloc(size);
+    if (!ptr) return NULL;
 
-    if (arena->offset + size >= arena->capacity) {
-        size_t new_size = MAX(arena->offset + size, arena->capacity*2);
-        arena->base = realloc(arena->base, new_size);
-        arena->capacity = new_size;
+    if (arena->count >= arena->capacity) {
+        size_t new_sz = arena->capacity * 2;
+        void** new_data = malloc(new_sz);
+        if (!new_data) {
+            free(ptr);
+            return NULL;
+        }
+        
+        memcpy(new_data, arena->data, (arena->count - 1) *sizeof(void*));
+        arena->data = new_data;
+        arena->capacity = new_sz;
     }
     
-    void* ptr = arena->base + arena->offset;
-    arena->offset += size;
+    arena->data[arena->count++] = ptr;
     return ptr;
 }
 
@@ -68,8 +74,10 @@ void*  jarena_zeroed(JArena* arena, size_t size) {
 
 void jarena_free(JArena* arena) {
     if (arena) {
-        free(arena->base);
-        arena->base = NULL;
+        for (int i = 0; i < arena->count; i++) {
+            free(arena->data[i]);
+        }
+        free(arena->data);
     }
 }
 
@@ -77,7 +85,6 @@ char* jarena_strdup(JArena* arena, char* str) {
     size_t len = strlen(str) + 1;
     char* copy = (char*)jarena_alloc(arena, len);
     if (copy) memcpy(copy, str, len);
-    copy[len] = '\0';
     return copy;
 }
 #endif
@@ -105,7 +112,7 @@ bool    jb_eq(JBuffer, const char*);
 size_t  jb_len(JBuffer);
 
 #ifdef JUVE_IMPLEMENTATION
-  JBuffer jb_create(JArena* arena) {
+JBuffer jb_create(JArena* arena) {
     return (JBuffer) {
         .len = 0,
         .cap = JBUF_INI_CAP,
@@ -114,13 +121,13 @@ size_t  jb_len(JBuffer);
     };
 }
 
-  JBuffer jb_from_str(JArena* arena, const char* cstr) {
+JBuffer jb_from_str(JArena* arena, const char* cstr) {
     JBuffer buf = jb_create(arena);
     jb_append(&buf, cstr);
     return buf;
 }
 
-  size_t jb_append(JBuffer* buf, const char* str) {
+size_t jb_append(JBuffer* buf, const char* str) {
     if (strlen(str) == 0) return 0;
     
     size_t total_len = buf->len + strlen(str);
@@ -145,30 +152,41 @@ size_t  jb_len(JBuffer);
     va_list args;
     va_start(args, fmt);
 
-    size_t needed = vsnprintf(NULL, 0, fmt, args);
-
-    char* str = (char*)jarena_alloc(buf->arena, needed + 1);
-    va_list args_real;
-    va_start(args_real, fmt);
-
-    vsnprintf(str, needed + 1, fmt, args_real);
-
-    jb_append(buf, str);
+    va_list copy;
+    va_copy(copy, args);
     
-    return 1;
+    size_t needed = vsnprintf(NULL, 0, fmt, args);
+    va_end(args);
+
+    if (needed == 0) {
+        va_end(copy);
+        return 0;
+    }
+    
+    char* str = (char*)jarena_alloc(buf->arena, needed + 1);
+    if (!str) {
+        va_end(copy);
+        return 0;
+    }
+    
+    vsnprintf(str, needed + 1, fmt, copy);
+    va_end(copy);
+    
+    jb_append(buf, str);    
+    return needed;
 }
 
-  void  jb_print(JBuffer buf) {
+void  jb_print(JBuffer buf) {
     printf("%s", buf.data);
 }
 
-  char* jb_str(JBuffer buf) {
+char* jb_str(JBuffer buf) {
     return jarena_strdup(buf.arena, buf.data);
 }
 
-  void  jb_clear(JBuffer* buf) { buf->len = 0; buf->data[0] = '\0'; }
-  bool  jb_eq(JBuffer buf, const char* str) { return strcmp(buf.data, str) == 0; }
-  size_t jb_len(JBuffer buf) { return buf.len; }
+void  jb_clear(JBuffer* buf) { buf->len = 0; buf->data[0] = '\0'; }
+bool  jb_eq(JBuffer buf, const char* str) { return strcmp(buf.data, str) == 0; }
+size_t jb_len(JBuffer buf) { return buf.len; }
 #endif
 
 

@@ -1,8 +1,2 @@
-#include "/home/dry/programming/c/cog/runtime/cog.h"
-
-extern cog_int printf (cog_cstr fmt, ...); // printf
-cog_int cog_main ()
-{
-    cog_int age = 11;
-    printf("age = %d\n", age);
-} // cog_main
+malloc(): corrupted top size
+Aborted (core dumped)
